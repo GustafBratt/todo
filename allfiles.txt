@@ -1,0 +1,355 @@
+# Todo app
+This is a simple proof of concept app for todos, inspired by 
+Trello. There are a number of boards. Each board has a number of orderd lists.
+Each list has a number of ordered todos.
+
+## Purpose
+The main purpose here is to tinker with ports and adapters architecture.
+
+## Architectural decisions
+* Make illegal states unrepresentable
+* Domain model immutable
+* No "commands", use cases taks a list of arguments
+* No spring boot in applicaton modulepackage nu.forsenad.todo.domain;
+
+import java.util.List;
+
+public class Board {
+    String id;
+    String name;
+    List<TodoList> lists;
+
+    public Board(String id, String name, List<TodoList> lists) {
+        if (lists == null) {
+            throw new IllegalArgumentException("Lists cannot be null");
+        }
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("Board name cannot be blank");
+        }
+            this.id = id;
+        this.name = name;
+        this.lists = List.copyOf(lists);
+    }
+
+    public static Board create(String id, String name) {
+        return new Board(id, name, List.of());
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public List<TodoList> getLists() {
+        return lists;
+    }
+}
+package nu.forsenad.todo.domain;
+
+public class Todo {
+    String id;
+    String title;
+    String description;
+}
+package nu.forsenad.todo.domain;
+
+import java.util.List;
+
+public class TodoList {
+    String id;
+    String title;
+    List<Todo> todoList;
+}
+package nu.forsenad.todo.ports.in;
+
+import nu.forsenad.todo.domain.Board;
+import nu.forsenad.todo.ports.out.BoardRepository;
+
+import java.util.UUID;
+
+public class CreateBoardUseCase {
+    private final BoardRepository boardRepository;
+
+    public CreateBoardUseCase(BoardRepository boardRepository) {
+        this.boardRepository = boardRepository;
+    }
+
+    public Board execute(String name) {
+        String boardId = UUID.randomUUID().toString();
+
+        Board board = Board.create(
+                boardId,
+                name
+        );
+
+        boardRepository.save(board);
+
+        return board;
+    }
+}
+package nu.forsenad.todo.ports.out;
+
+import nu.forsenad.todo.domain.Board;
+
+public interface BoardRepository {
+    void save(Board board);
+
+    boolean exists(String boardId);
+}
+package nu.forsenad.todo.ports.in;
+
+import nu.forsenad.todo.domain.Board;
+import nu.forsenad.todo.ports.out.BoardRepository;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
+
+@ExtendWith(MockitoExtension.class)
+class CreateBoardUseCaseTest {
+    @Mock
+    BoardRepository boardRepository;
+
+    @Test
+    void should_persist_ok() {
+        CreateBoardUseCase sut = new CreateBoardUseCase(boardRepository);
+
+        sut.execute("Test board");
+
+        ArgumentCaptor<Board> captor = ArgumentCaptor.forClass(Board.class);
+        verify(boardRepository).save(captor.capture());
+
+        Board saved = captor.getValue();
+        assertThat(saved.getName()).isEqualTo("Test board");
+        assertThat(saved.getLists()).isEmpty();
+        assertThat(saved.getId()).isNotEmpty();
+    }
+
+    @Test
+    void should_reject_null_name() {
+        CreateBoardUseCase sut = new CreateBoardUseCase(boardRepository);
+        Assertions.assertThrows(IllegalArgumentException.class, () ->
+                sut.execute(null)
+        );
+    }
+
+    @Test
+    void should_reject_blank_name() {
+        CreateBoardUseCase sut = new CreateBoardUseCase(boardRepository);
+        Assertions.assertThrows(IllegalArgumentException.class, () ->
+                sut.execute(" ")
+        );
+    }
+
+}package nu.forsenad.todo.infrastructure.inbound.rest;
+
+import nu.forsenad.todo.domain.Board;
+import nu.forsenad.todo.infrastructure.inbound.rest.model.BoardModel;
+import nu.forsenad.todo.ports.in.CreateBoardUseCase;
+import nu.forsenad.todo.ports.out.BoardRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+@RequestMapping("/boards")
+public class BoardController {
+    @Autowired
+    BoardRepository boardRepository;
+
+    @PostMapping
+    public ResponseEntity<BoardModel> createBoard(@RequestBody String name) {
+        Board newBoard = new CreateBoardUseCase(boardRepository).execute(name);
+        return ResponseEntity.ok(new BoardModel(newBoard));
+    }
+}
+package nu.forsenad.todo.infrastructure.inbound.rest.model;
+
+import nu.forsenad.todo.domain.Board;
+
+import java.util.List;
+
+public class BoardModel {
+    String id;
+    String name;
+    List<TodoListModel> lists;
+
+    public BoardModel(Board domainBoard) {
+        this.id = domainBoard.getId();
+        this.name = domainBoard.getName();
+        this.lists = domainBoard.getLists()
+                .stream()
+                .map(TodoListModel::new)
+                .toList();
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public List<TodoListModel> getLists() {
+        return lists;
+    }
+}
+package nu.forsenad.todo.infrastructure.inbound.rest.model;
+
+import nu.forsenad.todo.domain.TodoList;
+
+public class TodoListModel {
+    public TodoListModel(TodoList domList) {
+        //TODO
+    }
+}
+package nu.forsenad.todo.infrastructure.outbound.entity;
+
+import jakarta.persistence.*;
+import nu.forsenad.todo.domain.Board;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Entity
+@Table(name = "boards")
+public class BoardEntity {
+
+    @Id
+    private String id;
+
+    private String name;
+
+    @Version
+    private long version;
+
+    @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ListEntity> lists = new ArrayList<>();
+
+    protected BoardEntity() {
+        // JPA requires a no-arg constructor
+    }
+
+    // Map from domain to entity
+    public static BoardEntity fromDomain(Board board) {
+        BoardEntity entity = new BoardEntity();
+        entity.id = board.getId();
+        entity.name = board.getName();
+        entity.lists = board.getLists().stream()
+                .map(ListEntity::fromDomain)
+                .collect(Collectors.toList());
+        // Set bidirectional relationship
+        entity.lists.forEach(list -> list.setBoard(entity));
+        return entity;
+    }
+
+    // Map from entity to domain
+    public Board toDomain() {
+        return new Board(
+                this.id,
+                this.name,
+                this.lists.stream()
+                        .map(ListEntity::toDomain)
+                        .toList()
+        );
+    }
+}package nu.forsenad.todo.infrastructure.outbound.entity;
+
+import jakarta.persistence.*;
+import nu.forsenad.todo.domain.TodoList;
+
+@Entity
+@Table(name = "lists")
+public class ListEntity {
+    @Id
+    private String id;
+
+    private String name;
+
+    @ManyToOne(cascade = CascadeType.ALL)
+    private BoardEntity board;
+
+
+    public static ListEntity fromDomain(TodoList todoList) {
+        //TODO
+        return new ListEntity();
+    }
+
+    public void setBoard(BoardEntity entity) {
+        //TODO
+    }
+
+    public TodoList toDomain() {
+        return new TodoList();
+        //TODO
+    }
+}
+package nu.forsenad.todo.infrastructure.outbound.repo;
+
+import nu.forsenad.todo.domain.Board;
+import nu.forsenad.todo.infrastructure.outbound.entity.BoardEntity;
+import nu.forsenad.todo.ports.out.BoardRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public class BoardRepositoryImpl implements BoardRepository {
+
+    private final SpringDataBoardRepository jpaRepository;
+
+    public BoardRepositoryImpl(SpringDataBoardRepository jpaRepository) {
+        this.jpaRepository = jpaRepository;
+    }
+
+    @Override
+    public void save(Board board) {
+        BoardEntity entity = BoardEntity.fromDomain(board);
+        jpaRepository.save(entity);
+    }
+
+    @Override
+    public boolean exists(String boardId) {
+        return jpaRepository.existsById(boardId);
+    }
+}
+package nu.forsenad.todo.infrastructure.outbound.repo;
+import nu.forsenad.todo.infrastructure.outbound.entity.BoardEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface SpringDataBoardRepository extends JpaRepository<BoardEntity, String> {
+}
+package nu.forsenad.todo.infrastructure;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class TodoApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(TodoApplication.class, args);
+	}
+
+}
+package nu.forsenad.todo.infrastructure;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest
+class TodoApplicationTests {
+
+	@Test
+	void contextLoads() {
+	}
+
+}

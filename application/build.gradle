@@ -1,0 +1,28 @@
+plugins {
+	id 'java'
+}
+
+group = 'nu.forsenad.todo'
+version = '0.0.1-SNAPSHOT'
+description = 'application'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.11.0'
+    testImplementation 'org.assertj:assertj-core:3.25.3'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}

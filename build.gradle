@@ -1,0 +1,11 @@
+allprojects {
+    group = 'com.example.todo'
+    version = '0.1.0'
+}
+
+//dependencies {
+//    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
+//}
+//test {
+//    useJUnitPlatform()
+//}
