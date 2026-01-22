@@ -5,6 +5,8 @@ import nu.forsenad.todo.infrastructure.outbound.entity.BoardEntity;
 import nu.forsenad.todo.ports.out.BoardRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public class BoardRepositoryImpl implements BoardRepository {
 
@@ -30,5 +32,12 @@ public class BoardRepositoryImpl implements BoardRepository {
         return jpaRepository.findByIdWithLists(boardId)
                 .map(BoardEntity::toDomain)
                 .orElseThrow(() -> new IllegalArgumentException("Board not found: " + boardId));
+    }
+
+    @Override
+    public List<Board> findAll() {
+        return jpaRepository.findAll().stream()
+                .map(BoardEntity::toDomain)
+                .toList();
     }
 }

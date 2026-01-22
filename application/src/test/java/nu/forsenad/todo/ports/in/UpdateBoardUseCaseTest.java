@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class UpdateBoardNameUseCaseTest {
+class UpdateBoardUseCaseTest {
 
     @Mock
     BoardRepository boardRepository;
@@ -29,7 +29,7 @@ class UpdateBoardNameUseCaseTest {
         when(boardRepository.exists(boardId)).thenReturn(true);
         when(boardRepository.findById(boardId)).thenReturn(existingBoard);
 
-        UpdateBoardNameUseCase sut = new UpdateBoardNameUseCase(boardRepository);
+        UpdateBoardUseCase sut = new UpdateBoardUseCase(boardRepository);
 
         // When
         Board result = sut.execute(boardId, "New Name");
@@ -50,7 +50,7 @@ class UpdateBoardNameUseCaseTest {
     void should_reject_nonexistent_board() {
         when(boardRepository.exists("nonexistent")).thenReturn(false);
 
-        UpdateBoardNameUseCase sut = new UpdateBoardNameUseCase(boardRepository);
+        UpdateBoardUseCase sut = new UpdateBoardUseCase(boardRepository);
 
         assertThrows(IllegalArgumentException.class, () ->
                 sut.execute("nonexistent", "New Name")
@@ -64,7 +64,7 @@ class UpdateBoardNameUseCaseTest {
         when(boardRepository.exists(boardId)).thenReturn(true);
         when(boardRepository.findById(boardId)).thenReturn(existingBoard);
 
-        UpdateBoardNameUseCase sut = new UpdateBoardNameUseCase(boardRepository);
+        UpdateBoardUseCase sut = new UpdateBoardUseCase(boardRepository);
 
         assertThrows(IllegalArgumentException.class, () ->
                 sut.execute(boardId, "  ")
@@ -80,7 +80,7 @@ class UpdateBoardNameUseCaseTest {
         when(boardRepository.exists(boardId)).thenReturn(true);
         when(boardRepository.findById(boardId)).thenReturn(existingBoard);
 
-        UpdateBoardNameUseCase sut = new UpdateBoardNameUseCase(boardRepository);
+        UpdateBoardUseCase sut = new UpdateBoardUseCase(boardRepository);
 
         // When
         Board result = sut.execute(boardId, "New Name");
