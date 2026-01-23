@@ -37,4 +37,8 @@ public class TodoList {
     public List<Todo> getTodos() {
         return todos;
     }
+
+    public TodoList withTitle(String newTitle) {
+        return create(this.id, newTitle);
+    }
 }

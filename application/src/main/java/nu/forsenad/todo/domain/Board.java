@@ -1,5 +1,6 @@
 package nu.forsenad.todo.domain;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Board {
@@ -31,19 +32,60 @@ public class Board {
         return new Board(this.id, newName, this.lists);
     }
 
-    public Board withLists(List<TodoList> newLists) {
-        return new Board(this.id, this.name, newLists);
-    }
 
     public String getId() {
         return id;
     }
-
     public String getName() {
         return name;
     }
 
     public List<TodoList> getLists() {
-        return lists;
+        return new ArrayList<>(lists);
+    }
+
+    public Board withNewList(TodoList newList) {
+        List<TodoList> newLists = new ArrayList<>(this.lists);
+        newLists.add(newList);
+        return new Board(this.id, this.name, newLists);
+    }
+
+    public Board withRenamedList(String listId, String newTitle) {
+        List<TodoList> newLists = lists.stream()
+                .map(list ->
+                        list.getId().equals(listId)
+                                ? list.withTitle(newTitle)
+                                : list
+                )
+                .toList();
+
+        return new Board(this.id, this.name, newLists);
+    }
+
+    public Board moveList(String listId, int newPosition) {
+        if (newPosition < 0 || newPosition >= lists.size()) {
+            throw new IllegalArgumentException("Can't move to position " + newPosition);
+        }
+
+        int currentIndex = indexOfList(listId);
+
+        if (currentIndex == newPosition) {
+            return this; // no-op, still immutable
+        }
+
+        List<TodoList> newLists = new ArrayList<>(lists);
+        TodoList list = newLists.remove(currentIndex);
+        newLists.add(newPosition, list);
+
+        return new Board(this.id, this.name, newLists);
+    }
+
+    private int indexOfList(String listId) {
+        for (int i = 0; i < lists.size(); i++) {
+            if (lists.get(i).getId().equals(listId)) {
+                return i;
+            }
+        }
+        throw new IllegalArgumentException("Board " + this.id + " has no list with id " + listId);
     }
 }

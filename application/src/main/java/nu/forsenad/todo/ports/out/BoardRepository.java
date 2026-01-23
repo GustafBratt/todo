@@ -12,4 +12,6 @@ public interface BoardRepository {
     Board findById(String boardId);
 
     List<Board> findAll();
+
+    Board findBoardByListId(String listId);
 }

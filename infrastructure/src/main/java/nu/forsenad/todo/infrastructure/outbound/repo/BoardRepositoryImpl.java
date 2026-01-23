@@ -40,4 +40,9 @@ public class BoardRepositoryImpl implements BoardRepository {
                 .map(BoardEntity::toDomain)
                 .toList();
     }
+
+    @Override
+    public Board findBoardByListId(String listId) {
+        return null; //TODO
+    }
 }
