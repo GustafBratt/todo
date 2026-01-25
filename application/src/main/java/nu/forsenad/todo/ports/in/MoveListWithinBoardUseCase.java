@@ -3,10 +3,10 @@ package nu.forsenad.todo.ports.in;
 import nu.forsenad.todo.domain.Board;
 import nu.forsenad.todo.ports.out.BoardRepository;
 
-public class MoveListUseCase {
+public class MoveListWithinBoardUseCase {
     private final BoardRepository boardRepository;
 
-    public MoveListUseCase(
+    public MoveListWithinBoardUseCase(
             BoardRepository boardRepository
     ) {
         this.boardRepository = boardRepository;
@@ -17,7 +17,7 @@ public class MoveListUseCase {
     public Board execute(String listId, int newPosition) {
         Board board = boardRepository.findBoardByListId(listId);
 
-        Board updatedBoard = board.moveList(listId, newPosition);
+        Board updatedBoard = board.withMovedList(listId, newPosition);
 
         boardRepository.save(updatedBoard);
         return updatedBoard;

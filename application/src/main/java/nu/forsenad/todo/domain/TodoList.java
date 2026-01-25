@@ -41,4 +41,13 @@ public class TodoList {
     public TodoList withTitle(String newTitle) {
         return create(this.id, newTitle);
     }
+
+    @Override
+    public String toString() {
+        return "TodoList{" +
+                "id='" + id + '\'' +
+                ", title='" + title + '\'' +
+                ", todos=" + todos +
+                '}';
+    }
 }

@@ -50,6 +50,13 @@ public class Board {
         return new Board(this.id, this.name, newLists);
     }
 
+    public Board withDeletedList(String listId) {
+        List<TodoList> newLists = new ArrayList<>(this.lists);
+        newLists = newLists.stream().filter(tl -> !tl.getId().equals(listId)).toList();
+        return new Board(this.id, this.name, newLists);
+    }
+
+
     public Board withRenamedList(String listId, String newTitle) {
         List<TodoList> newLists = lists.stream()
                 .map(list ->
@@ -62,7 +69,7 @@ public class Board {
         return new Board(this.id, this.name, newLists);
     }
 
-    public Board moveList(String listId, int newPosition) {
+    public Board withMovedList(String listId, int newPosition) {
         if (newPosition < 0 || newPosition >= lists.size()) {
             throw new IllegalArgumentException("Can't move to position " + newPosition);
         }
@@ -88,4 +95,5 @@ public class Board {
         }
         throw new IllegalArgumentException("Board " + this.id + " has no list with id " + listId);
     }
+
 }

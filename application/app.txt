@@ -1,0 +1,589 @@
+package nu.forsenad.todo.domain;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class Board {
+    private final String id;
+    private final String name;
+    private final List<TodoList> lists;
+
+    public Board(String id, String name, List<TodoList> lists) {
+        if (lists == null) {
+            throw new IllegalArgumentException("Lists cannot be null");
+        }
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("Board name cannot be blank");
+        }
+        if (id == null || id.isBlank()) {
+            throw new IllegalArgumentException("Board id cannot be blank");
+        }
+        this.id = id;
+        this.name = name;
+        this.lists = List.copyOf(lists);
+    }
+
+    public static Board create(String id, String name) {
+        return new Board(id, name, List.of());
+    }
+
+    // Immutable update method - returns new instance with updated name
+    public Board withName(String newName) {
+        return new Board(this.id, newName, this.lists);
+    }
+
+
+    public String getId() {
+        return id;
+    }
+    public String getName() {
+        return name;
+    }
+
+    public List<TodoList> getLists() {
+        return new ArrayList<>(lists);
+    }
+
+    public Board withNewList(TodoList newList) {
+        List<TodoList> newLists = new ArrayList<>(this.lists);
+        newLists.add(newList);
+        return new Board(this.id, this.name, newLists);
+    }
+
+    public Board withRenamedList(String listId, String newTitle) {
+        List<TodoList> newLists = lists.stream()
+                .map(list ->
+                        list.getId().equals(listId)
+                                ? list.withTitle(newTitle)
+                                : list
+                )
+                .toList();
+
+        return new Board(this.id, this.name, newLists);
+    }
+
+    public Board moveList(String listId, int newPosition) {
+        if (newPosition < 0 || newPosition >= lists.size()) {
+            throw new IllegalArgumentException("Can't move to position " + newPosition);
+        }
+
+        int currentIndex = indexOfList(listId);
+
+        if (currentIndex == newPosition) {
+            return this; // no-op, still immutable
+        }
+
+        List<TodoList> newLists = new ArrayList<>(lists);
+        TodoList list = newLists.remove(currentIndex);
+        newLists.add(newPosition, list);
+
+        return new Board(this.id, this.name, newLists);
+    }
+
+    private int indexOfList(String listId) {
+        for (int i = 0; i < lists.size(); i++) {
+            if (lists.get(i).getId().equals(listId)) {
+                return i;
+            }
+        }
+        throw new IllegalArgumentException("Board " + this.id + " has no list with id " + listId);
+    }
+}package nu.forsenad.todo.domain;
+
+public class Todo {
+    private final String id;
+    private final String title;
+    private final String description;
+
+    public Todo(String id, String title, String description) {
+        if (id == null || id.isBlank()) {
+            throw new IllegalArgumentException("Todo id cannot be blank");
+        }
+        if (title == null || title.isBlank()) {
+            throw new IllegalArgumentException("Todo title cannot be blank");
+        }
+        this.id = id;
+        this.title = title;
+        this.description = description;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+}package nu.forsenad.todo.domain;
+
+import java.util.List;
+
+public class TodoList {
+    private final String id;
+    private final String title;
+    private final List<Todo> todos;
+
+    public TodoList(String id, String title, List<Todo> todos) {
+        if (id == null || id.isBlank()) {
+            throw new IllegalArgumentException("TodoList id cannot be blank");
+        }
+        if (title == null || title.isBlank()) {
+            throw new IllegalArgumentException("TodoList title cannot be blank");
+        }
+        if (todos == null) {
+            throw new IllegalArgumentException("Todos cannot be null");
+        }
+        this.id = id;
+        this.title = title;
+        this.todos = List.copyOf(todos);
+    }
+
+    public static TodoList create(String id, String title) {
+        return new TodoList(id, title, List.of());
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public List<Todo> getTodos() {
+        return todos;
+    }
+
+    public TodoList withTitle(String newTitle) {
+        return create(this.id, newTitle);
+    }
+}package nu.forsenad.todo.ports.in;
+
+import nu.forsenad.todo.domain.Board;
+import nu.forsenad.todo.ports.out.BoardRepository;
+
+import java.util.UUID;
+
+public class CreateBoardUseCase {
+    private final BoardRepository boardRepository;
+
+    public CreateBoardUseCase(BoardRepository boardRepository) {
+        this.boardRepository = boardRepository;
+    }
+
+    public Board execute(String name) {
+        String boardId = UUID.randomUUID().toString();
+
+        Board board = Board.create(
+                boardId,
+                name
+        );
+
+        boardRepository.save(board);
+
+        return board;
+    }
+}
+package nu.forsenad.todo.ports.in;
+
+import nu.forsenad.todo.domain.Board;
+import nu.forsenad.todo.domain.TodoList;
+import nu.forsenad.todo.ports.out.BoardRepository;
+
+import java.util.UUID;
+
+public class CreateListUseCase {
+    private final BoardRepository boardRepository;
+
+    public CreateListUseCase(BoardRepository boardRepository) {
+        this.boardRepository = boardRepository;
+    }
+
+    public Board execute(String boardId, String name) {
+        Board board = boardRepository.findById(boardId);
+
+        TodoList newList = TodoList.create(UUID.randomUUID().toString(), name);
+        Board updatedBoard = board.withNewList(newList);
+
+        boardRepository.save(updatedBoard);
+        return updatedBoard;
+    }
+}
+package nu.forsenad.todo.ports.in;
+
+import nu.forsenad.todo.domain.Board;
+import nu.forsenad.todo.ports.out.BoardRepository;
+
+public class GetBoardDetailsUseCase {
+    private final BoardRepository boardRepository;
+
+    public GetBoardDetailsUseCase(BoardRepository boardRepository) {
+        this.boardRepository = boardRepository;
+    }
+
+    public Board execute(String boardId) {
+        return boardRepository.findById(boardId);
+    }
+}
+package nu.forsenad.todo.ports.in;
+
+import nu.forsenad.todo.domain.Board;
+import nu.forsenad.todo.ports.out.BoardRepository;
+
+import java.util.List;
+
+public class ListAllBoardsUseCase {
+    private final BoardRepository boardRepository;
+
+    public ListAllBoardsUseCase(BoardRepository boardRepository) {
+        this.boardRepository = boardRepository;
+    }
+
+    public List<Board> execute() {
+        return boardRepository.findAll();
+    }
+}
+package nu.forsenad.todo.ports.in;
+
+import nu.forsenad.todo.domain.Board;
+import nu.forsenad.todo.ports.out.BoardRepository;
+
+public class MoveListUseCase {
+    private final BoardRepository boardRepository;
+
+    public MoveListUseCase(
+            BoardRepository boardRepository
+    ) {
+        this.boardRepository = boardRepository;
+    }
+
+    //Reorders lists on the board.
+    //Positions are 0-indexed
+    public Board execute(String listId, int newPosition) {
+        Board board = boardRepository.findBoardByListId(listId);
+
+        Board updatedBoard = board.moveList(listId, newPosition);
+
+        boardRepository.save(updatedBoard);
+        return updatedBoard;
+    }
+}
+package nu.forsenad.todo.ports.in;
+
+import nu.forsenad.todo.domain.Board;
+import nu.forsenad.todo.ports.out.BoardRepository;
+
+public class UpdateBoardUseCase {
+    private final BoardRepository boardRepository;
+
+    public UpdateBoardUseCase(BoardRepository boardRepository) {
+        this.boardRepository = boardRepository;
+    }
+
+    public Board execute(String boardId, String newName) {
+        if (!boardRepository.exists(boardId)) {
+            throw new IllegalArgumentException("Board with id " + boardId + " does not exist");
+        }
+
+        Board existingBoard = boardRepository.findById(boardId);
+        Board updatedBoard = existingBoard.withName(newName);
+
+        boardRepository.save(updatedBoard);
+
+        return updatedBoard;
+    }
+}package nu.forsenad.todo.ports.in;
+
+import nu.forsenad.todo.domain.Board;
+import nu.forsenad.todo.ports.out.BoardRepository;
+
+public class UpdateListTitleUseCase {
+    private final BoardRepository boardRepository;
+
+    public UpdateListTitleUseCase(
+            BoardRepository boardRepository
+    ) {
+        this.boardRepository = boardRepository;
+    }
+
+    public Board execute(String listId, String newTitle) {
+        Board existingBoard = boardRepository.findBoardByListId(listId);
+
+        Board updated = existingBoard.withRenamedList(listId, newTitle);
+
+        boardRepository.save(updated);
+        return updated;
+    }
+}package nu.forsenad.todo.ports.out;
+
+import nu.forsenad.todo.domain.Board;
+
+import java.util.List;
+
+public interface BoardRepository {
+    void save(Board board);
+
+    boolean exists(String boardId);
+
+    Board findById(String boardId);
+
+    List<Board> findAll();
+
+    Board findBoardByListId(String listId);
+}package nu.forsenad.todo.ports.in;
+
+import nu.forsenad.todo.domain.Board;
+import nu.forsenad.todo.ports.out.BoardRepository;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
+
+@ExtendWith(MockitoExtension.class)
+class CreateBoardUseCaseTest {
+    @Mock
+    BoardRepository boardRepository;
+
+    @Test
+    void should_persist_ok() {
+        CreateBoardUseCase sut = new CreateBoardUseCase(boardRepository);
+
+        sut.execute("Test board");
+
+        ArgumentCaptor<Board> captor = ArgumentCaptor.forClass(Board.class);
+        verify(boardRepository).save(captor.capture());
+
+        Board saved = captor.getValue();
+        assertThat(saved.getName()).isEqualTo("Test board");
+        assertThat(saved.getLists()).isEmpty();
+        assertThat(saved.getId()).isNotEmpty();
+    }
+
+    @Test
+    void should_reject_null_name() {
+        CreateBoardUseCase sut = new CreateBoardUseCase(boardRepository);
+        Assertions.assertThrows(IllegalArgumentException.class, () ->
+                sut.execute(null)
+        );
+    }
+
+    @Test
+    void should_reject_blank_name() {
+        CreateBoardUseCase sut = new CreateBoardUseCase(boardRepository);
+        Assertions.assertThrows(IllegalArgumentException.class, () ->
+                sut.execute(" ")
+        );
+    }
+
+}package nu.forsenad.todo.ports.in;
+
+import nu.forsenad.todo.domain.Board;
+import nu.forsenad.todo.domain.TodoList;
+import nu.forsenad.todo.ports.out.BoardRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class MoveListUseCaseTest {
+
+    @Mock
+    BoardRepository boardRepository;
+
+    MoveListUseCase sut;
+
+    TodoList l1;
+    TodoList l2;
+    Board board;
+
+    @BeforeEach
+    void setUp() {
+        sut = new MoveListUseCase(boardRepository);
+
+        l1 = TodoList.create("l1", "List 1");
+        l2 = TodoList.create("l2", "List 2");
+
+        board = Board.create("b1", "Board 1")
+                .withNewList(l1)
+                .withNewList(l2);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "l2, 0, l2, l1",
+            "l1, 1, l2, l1"
+    })
+    void moves_list_to_new_position(
+            String listId,
+            int newPosition,
+            String firstExpected,
+            String secondExpected
+    ) {
+        when(boardRepository.findBoardByListId(listId))
+                .thenReturn(board);
+
+        Board result = sut.execute(listId, newPosition);
+
+        assertThat(result.getLists())
+                .extracting(TodoList::getId)
+                .containsExactly(firstExpected, secondExpected);
+
+        verify(boardRepository).save(result);
+    }
+
+    @Test
+    void moving_list_to_same_position_returns_same_order() {
+        when(boardRepository.findBoardByListId("l1"))
+                .thenReturn(board);
+
+        Board result = sut.execute("l1", 0);
+
+        assertThat(result.getLists())
+                .extracting(TodoList::getId)
+                .containsExactly("l1", "l2");
+
+        verify(boardRepository).save(result);
+    }
+    @Test
+    void moving_list_to_negative_position_throws() {
+        when(boardRepository.findBoardByListId("l1"))
+                .thenReturn(board);
+
+        assertThatThrownBy(() -> sut.execute("l1", -1))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        verify(boardRepository, never()).save(any());
+    }
+
+    @Test
+    void moving_list_past_end_throws() {
+        when(boardRepository.findBoardByListId("l1"))
+                .thenReturn(board);
+
+        assertThatThrownBy(() -> sut.execute("l1", 2))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        verify(boardRepository, never()).save(any());
+    }
+
+    @Test
+    void moving_unknown_list_throws() {
+        when(boardRepository.findBoardByListId("l3"))
+                .thenThrow(new RuntimeException("l3"));
+
+        assertThatThrownBy(() -> sut.execute("l3", 0))
+                .isInstanceOf(RuntimeException.class);
+
+        verify(boardRepository, never()).save(any());
+    }
+
+
+}
+package nu.forsenad.todo.ports.in;
+
+import nu.forsenad.todo.domain.Board;
+import nu.forsenad.todo.domain.TodoList;
+import nu.forsenad.todo.ports.out.BoardRepository;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class UpdateBoardUseCaseTest {
+
+    @Mock
+    BoardRepository boardRepository;
+
+    @Test
+    void should_update_board_name() {
+        // Given
+        String boardId = "board-123";
+        Board existingBoard = Board.create(boardId, "Old Name");
+        when(boardRepository.exists(boardId)).thenReturn(true);
+        when(boardRepository.findById(boardId)).thenReturn(existingBoard);
+
+        UpdateBoardUseCase sut = new UpdateBoardUseCase(boardRepository);
+
+        // When
+        Board result = sut.execute(boardId, "New Name");
+
+        // Then
+        ArgumentCaptor<Board> captor = ArgumentCaptor.forClass(Board.class);
+        verify(boardRepository).save(captor.capture());
+
+        Board saved = captor.getValue();
+        assertThat(saved.getId()).isEqualTo(boardId);
+        assertThat(saved.getName()).isEqualTo("New Name");
+        assertThat(saved.getLists()).isEmpty();
+
+        assertThat(result.getName()).isEqualTo("New Name");
+    }
+
+    @Test
+    void should_reject_nonexistent_board() {
+        when(boardRepository.exists("nonexistent")).thenReturn(false);
+
+        UpdateBoardUseCase sut = new UpdateBoardUseCase(boardRepository);
+
+        assertThrows(IllegalArgumentException.class, () ->
+                sut.execute("nonexistent", "New Name")
+        );
+    }
+
+    @Test
+    void should_reject_blank_name() {
+        String boardId = "board-123";
+        Board existingBoard = Board.create(boardId, "Old Name");
+        when(boardRepository.exists(boardId)).thenReturn(true);
+        when(boardRepository.findById(boardId)).thenReturn(existingBoard);
+
+        UpdateBoardUseCase sut = new UpdateBoardUseCase(boardRepository);
+
+        assertThrows(IllegalArgumentException.class, () ->
+                sut.execute(boardId, "  ")
+        );
+    }
+
+    @Test
+    void should_preserve_existing_lists() {
+        // Given
+        String boardId = "board-123";
+        Board existingBoard = new Board(boardId, "Old Name",
+                java.util.List.of(new TodoList("a", "b", List.of())));
+        when(boardRepository.exists(boardId)).thenReturn(true);
+        when(boardRepository.findById(boardId)).thenReturn(existingBoard);
+
+        UpdateBoardUseCase sut = new UpdateBoardUseCase(boardRepository);
+
+        // When
+        Board result = sut.execute(boardId, "New Name");
+
+        // Then
+        assertThat(result.getLists()).isEqualTo(existingBoard.getLists());
+    }
+}

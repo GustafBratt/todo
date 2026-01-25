@@ -16,12 +16,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class MoveListUseCaseTest {
+class MoveListWithinBoardUseCaseTest {
 
     @Mock
     BoardRepository boardRepository;
 
-    MoveListUseCase sut;
+    MoveListWithinBoardUseCase sut;
 
     TodoList l1;
     TodoList l2;
@@ -29,7 +29,7 @@ class MoveListUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        sut = new MoveListUseCase(boardRepository);
+        sut = new MoveListWithinBoardUseCase(boardRepository);
 
         l1 = TodoList.create("l1", "List 1");
         l2 = TodoList.create("l2", "List 2");
