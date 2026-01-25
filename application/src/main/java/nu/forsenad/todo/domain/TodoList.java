@@ -1,5 +1,7 @@
 package nu.forsenad.todo.domain;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class TodoList {
@@ -35,7 +37,7 @@ public class TodoList {
     }
 
     public List<Todo> getTodos() {
-        return todos;
+        return Collections.unmodifiableList(todos);
     }
 
     public TodoList withTitle(String newTitle) {
@@ -49,5 +51,11 @@ public class TodoList {
                 ", title='" + title + '\'' +
                 ", todos=" + todos +
                 '}';
+    }
+
+    public TodoList withNewTodo(String title, String description) {
+        List<Todo> newList = new ArrayList<>(getTodos());
+        newList.add(Todo.create(title, description));
+        return new TodoList(this.id, this.title, newList);
     }
 }

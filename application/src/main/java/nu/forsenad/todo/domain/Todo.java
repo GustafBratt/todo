@@ -1,5 +1,7 @@
 package nu.forsenad.todo.domain;
 
+import java.util.UUID;
+
 public class Todo {
     private final String id;
     private final String title;
@@ -15,6 +17,11 @@ public class Todo {
         this.id = id;
         this.title = title;
         this.description = description;
+    }
+
+    public static Todo create(String title, String description) {
+        String id = UUID.randomUUID().toString();
+        return new Todo(id, title, description);
     }
 
     public String getId() {

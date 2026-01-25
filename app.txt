@@ -476,6 +476,149 @@ class CreateBoardUseCaseTest {
 }package nu.forsenad.todo.ports.in;
 
 import nu.forsenad.todo.domain.Board;
+import nu.forsenad.todo.domain.Todo;
+import nu.forsenad.todo.domain.TodoList;
+import nu.forsenad.todo.ports.out.BoardRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class CreateTodoUseCaseTest {
+
+    @Mock
+    BoardRepository boardRepository;
+
+    CreateTodoUseCase sut;
+
+    Board board;
+    TodoList list;
+
+    @BeforeEach
+    void setUp() {
+        sut = new CreateTodoUseCase(boardRepository);
+
+        list = TodoList.create("list-1", "My List");
+        board = Board.create("board-1", "My Board")
+                .withNewList(list);
+    }
+
+    @Test
+    void should_add_todo_to_list() {
+        when(boardRepository.findBoardByListId("list-1"))
+                .thenReturn(board);
+
+        Board result = sut.execute("list-1", "Buy milk", "Get 2% milk from store");
+
+        ArgumentCaptor<Board> captor = ArgumentCaptor.forClass(Board.class);
+        verify(boardRepository).save(captor.capture());
+
+        Board saved = captor.getValue();
+        TodoList updatedList = saved.getList("list-1");
+
+        assertThat(updatedList.getTodos()).hasSize(1);
+        Todo todo = updatedList.getTodos().get(0);
+        assertThat(todo.getTitle()).isEqualTo("Buy milk");
+        assertThat(todo.getDescription()).isEqualTo("Get 2% milk from store");
+        assertThat(todo.getId()).isNotEmpty();
+    }
+
+    @Test
+    void should_preserve_existing_todos() {
+        TodoList listWithTodo = list.withNewTodo("Existing task", "Description");
+        Board boardWithTodo = board.withReplacedList(listWithTodo);
+
+        when(boardRepository.findBoardByListId("list-1"))
+                .thenReturn(boardWithTodo);
+
+        Board result = sut.execute("list-1", "New task", "New description");
+
+        TodoList updatedList = result.getList("list-1");
+        assertThat(updatedList.getTodos()).hasSize(2);
+        assertThat(updatedList.getTodos())
+                .extracting(Todo::getTitle)
+                .containsExactly("Existing task", "New task");
+    }
+
+    @Test
+    void should_allow_null_description() {
+        when(boardRepository.findBoardByListId("list-1"))
+                .thenReturn(board);
+
+        Board result = sut.execute("list-1", "Task without description", null);
+
+        TodoList updatedList = result.getList("list-1");
+        assertThat(updatedList.getTodos()).hasSize(1);
+        assertThat(updatedList.getTodos().get(0).getDescription()).isNull();
+    }
+
+    @Test
+    void should_reject_null_title() {
+        when(boardRepository.findBoardByListId("list-1"))
+                .thenReturn(board);
+
+        assertThatThrownBy(() -> sut.execute("list-1", null, "Description"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("title");
+
+        verify(boardRepository, never()).save(any());
+    }
+
+    @Test
+    void should_reject_blank_title() {
+        when(boardRepository.findBoardByListId("list-1"))
+                .thenReturn(board);
+
+        assertThatThrownBy(() -> sut.execute("list-1", "  ", "Description"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("title");
+
+        verify(boardRepository, never()).save(any());
+    }
+
+    @Test
+    void should_throw_when_list_not_found() {
+        when(boardRepository.findBoardByListId("nonexistent-list"))
+                .thenThrow(new RuntimeException("List not found"));
+
+        assertThatThrownBy(() ->
+                sut.execute("nonexistent-list", "Task", "Description"))
+                .isInstanceOf(RuntimeException.class);
+
+        verify(boardRepository, never()).save(any());
+    }
+
+    @Test
+    void should_preserve_other_lists_on_board() {
+        TodoList list2 = TodoList.create("list-2", "Other List");
+        Board boardWithMultipleLists = board.withNewList(list2);
+
+        when(boardRepository.findBoardByListId("list-1"))
+                .thenReturn(boardWithMultipleLists);
+
+        Board result = sut.execute("list-1", "New task", "Description");
+
+        assertThat(result.getLists()).hasSize(2);
+        assertThat(result.getLists())
+                .extracting(TodoList::getId)
+                .containsExactly("list-1", "list-2");
+
+        // Only list-1 should have the new todo
+        assertThat(result.getList("list-1").getTodos()).hasSize(1);
+        assertThat(result.getList("list-2").getTodos()).isEmpty();
+    }
+}package nu.forsenad.todo.ports.in;
+
+import nu.forsenad.todo.domain.Board;
 import nu.forsenad.todo.domain.TodoList;
 import nu.forsenad.todo.ports.out.BoardRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -721,4 +864,432 @@ class UpdateBoardUseCaseTest {
         // Then
         assertThat(result.getLists()).isEqualTo(existingBoard.getLists());
     }
+}package nu.forsenad.todo.infrastructure.config;
+
+import nu.forsenad.todo.ports.in.CreateBoardUseCase;
+import nu.forsenad.todo.ports.in.ListAllBoardsUseCase;
+import nu.forsenad.todo.ports.in.UpdateBoardUseCase;
+import nu.forsenad.todo.ports.out.BoardRepository;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class UseCaseConfig {
+
+    @Bean
+    public CreateBoardUseCase createBoardUseCase(BoardRepository boardRepository) {
+        return new CreateBoardUseCase(boardRepository);
+    }
+
+    @Bean
+    public UpdateBoardUseCase updateBoardUseCase(BoardRepository boardRepository) {
+        return new UpdateBoardUseCase(boardRepository);
+    }
+
+    @Bean
+    public ListAllBoardsUseCase listAllBoardsUseCase(BoardRepository boardRepository) {
+        return new ListAllBoardsUseCase(boardRepository);
+    }
+}package nu.forsenad.todo.infrastructure.inbound.rest;
+
+import nu.forsenad.todo.domain.Board;
+import nu.forsenad.todo.infrastructure.inbound.rest.model.BoardModel;
+import nu.forsenad.todo.infrastructure.inbound.rest.model.CreateUpdateBoardRequest;
+import nu.forsenad.todo.ports.in.CreateBoardUseCase;
+import nu.forsenad.todo.ports.in.UpdateBoardUseCase;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/boards")
+public class BoardController {
+
+    private final CreateBoardUseCase createBoardUseCase;
+    private final UpdateBoardUseCase updateBoardUseCase;
+
+    public BoardController(CreateBoardUseCase createBoardUseCase,
+                           UpdateBoardUseCase updateBoardUseCase) {
+        this.createBoardUseCase = createBoardUseCase;
+        this.updateBoardUseCase = updateBoardUseCase;
+    }
+
+    // curl -X POST http://localhost:8080/boards -H "Content-Type: application/json" -d '{"name":"My First Board"}'
+
+    @PostMapping
+    public ResponseEntity<BoardModel> createBoard(@RequestBody CreateUpdateBoardRequest request) {
+        Board newBoard = createBoardUseCase.execute(request.getName());
+        return ResponseEntity.ok(new BoardModel(newBoard));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<BoardModel> updateBoard(
+            @PathVariable String id,
+            @RequestBody CreateUpdateBoardRequest request) {
+        Board newBoard = updateBoardUseCase.execute(id, request.getName());
+        return ResponseEntity.ok(new BoardModel(newBoard));
+    }
+
+}package nu.forsenad.todo.infrastructure.inbound.rest.model;
+
+import nu.forsenad.todo.domain.Board;
+
+import java.util.List;
+
+public class BoardModel {
+    String id;
+    String name;
+    List<TodoListModel> lists;
+
+    public BoardModel(Board domainBoard) {
+        this.id = domainBoard.getId();
+        this.name = domainBoard.getName();
+        this.lists = domainBoard.getLists()
+                .stream()
+                .map(TodoListModel::new)
+                .toList();
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public List<TodoListModel> getLists() {
+        return lists;
+    }
+}
+package nu.forsenad.todo.infrastructure.inbound.rest.model;
+
+public class CreateUpdateBoardRequest {
+    private String name;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+}
+package nu.forsenad.todo.infrastructure.inbound.rest.model;
+
+import nu.forsenad.todo.domain.TodoList;
+
+public class TodoListModel {
+    public TodoListModel(TodoList domList) {
+        //TODO
+    }
+}
+package nu.forsenad.todo.infrastructure.outbound.entity;
+
+import jakarta.persistence.*;
+import nu.forsenad.todo.domain.Board;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Entity
+@Table(name = "boards")
+public class BoardEntity {
+
+    @Id
+    private String id;
+
+    private String name;
+
+    @Version
+    private long version;
+
+    @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ListEntity> lists = new ArrayList<>();
+
+    protected BoardEntity() {
+        // JPA requires a no-arg constructor
+    }
+
+    // Map from domain to entity
+    public static BoardEntity fromDomain(Board board) {
+        BoardEntity entity = new BoardEntity();
+        entity.id = board.getId();
+        entity.name = board.getName();
+        entity.lists = board.getLists().stream()
+                .map(ListEntity::fromDomain)
+                .collect(Collectors.toList());
+        // Set bidirectional relationship
+        entity.lists.forEach(list -> list.setBoard(entity));
+        return entity;
+    }
+
+    // Map from entity to domain
+    public Board toDomain() {
+        return new Board(
+                this.id,
+                this.name,
+                this.lists.stream()
+                        .map(ListEntity::toDomain)
+                        .toList()
+        );
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public long getVersion() {
+        return version;
+    }
+
+    public List<ListEntity> getLists() {
+        return lists;
+    }
+}package nu.forsenad.todo.infrastructure.outbound.entity;
+
+import jakarta.persistence.*;
+import nu.forsenad.todo.domain.TodoList;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Entity
+@Table(name = "lists")
+public class ListEntity {
+    @Id
+    private String id;
+
+    private String title;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "board_id")
+    private BoardEntity board;
+
+    @OneToMany(mappedBy = "list", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<TodoEntity> todos = new ArrayList<>();
+
+    protected ListEntity() {
+        // JPA requires no-arg constructor
+    }
+
+    public static ListEntity fromDomain(TodoList todoList) {
+        ListEntity entity = new ListEntity();
+        entity.id = todoList.getId();
+        entity.title = todoList.getTitle();
+        entity.todos = todoList.getTodos().stream()
+                .map(TodoEntity::fromDomain)
+                .toList();
+        entity.todos.forEach(todo -> todo.setList(entity));
+        return entity;
+    }
+
+    public void setBoard(BoardEntity board) {
+        this.board = board;
+    }
+
+    public TodoList toDomain() {
+        return new TodoList(
+                this.id,
+                this.title,
+                this.todos.stream()
+                        .map(TodoEntity::toDomain)
+                        .toList()
+        );
+    }
+}package nu.forsenad.todo.infrastructure.outbound.entity;
+
+import jakarta.persistence.*;
+import nu.forsenad.todo.domain.Todo;
+
+@Entity
+@Table(name = "todos")
+public class TodoEntity {
+    @Id
+    private String id;
+
+    private String title;
+
+    @Column(length = 1000)
+    private String description;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "list_id")
+    private ListEntity list;
+
+    protected TodoEntity() {
+        // JPA requires no-arg constructor
+    }
+
+    public static TodoEntity fromDomain(Todo todo) {
+        TodoEntity entity = new TodoEntity();
+        entity.id = todo.getId();
+        entity.title = todo.getTitle();
+        entity.description = todo.getDescription();
+        return entity;
+    }
+
+    public void setList(ListEntity list) {
+        this.list = list;
+    }
+
+    public Todo toDomain() {
+        return new Todo(
+                this.id,
+                this.title,
+                this.description
+        );
+    }
+}package nu.forsenad.todo.infrastructure.outbound.repo;
+
+import nu.forsenad.todo.domain.Board;
+import nu.forsenad.todo.infrastructure.outbound.entity.BoardEntity;
+import nu.forsenad.todo.ports.out.BoardRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public class BoardRepositoryImpl implements BoardRepository {
+
+    private final SpringDataBoardRepository jpaRepository;
+
+    public BoardRepositoryImpl(SpringDataBoardRepository jpaRepository) {
+        this.jpaRepository = jpaRepository;
+    }
+
+    @Override
+    public void save(Board board) {
+        BoardEntity entity = BoardEntity.fromDomain(board);
+        jpaRepository.save(entity);
+    }
+
+    @Override
+    public boolean exists(String boardId) {
+        return jpaRepository.existsById(boardId);
+    }
+
+    @Override
+    public Board findById(String boardId) {
+        return jpaRepository.findByIdWithLists(boardId)
+                .map(BoardEntity::toDomain)
+                .orElseThrow(() -> new IllegalArgumentException("Board not found: " + boardId));
+    }
+
+    @Override
+    public List<Board> findAll() {
+        return jpaRepository.findAll().stream()
+                .map(BoardEntity::toDomain)
+                .toList();
+    }
+
+    @Override
+    public Board findBoardByListId(String listId) {
+        return null; //TODO
+    }
+}package nu.forsenad.todo.infrastructure.outbound.repo;
+import nu.forsenad.todo.infrastructure.outbound.entity.BoardEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.Optional;
+
+public interface SpringDataBoardRepository extends JpaRepository<BoardEntity, String> {
+    @Query("SELECT b FROM BoardEntity b LEFT JOIN FETCH b.lists WHERE b.id = :id")
+    Optional<BoardEntity> findByIdWithLists(@Param("id") String id);
+
+}
+package nu.forsenad.todo.infrastructure;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class TodoApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(TodoApplication.class, args);
+	}
+
+}
+package nu.forsenad.todo.infrastructure;
+
+import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
+import nu.forsenad.todo.infrastructure.outbound.entity.BoardEntity;
+import nu.forsenad.todo.infrastructure.outbound.repo.SpringDataBoardRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
+
+import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.*;
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ActiveProfiles("test")
+class BoardControllerIntegrationTest {
+
+    @LocalServerPort
+    private int port;
+
+    @Autowired
+    SpringDataBoardRepository boardRepository;
+
+    @BeforeEach
+    void setUp() {
+        RestAssured.port = port;
+        boardRepository.deleteAll();
+    }
+
+    @Test
+    @Transactional
+    void shouldCreateBoardAndPersistToDatabase() {
+        // Given
+        String boardName = "My Test Board";
+
+        // When
+        String boardId = given()
+                .contentType(ContentType.JSON)
+                .body("{\"name\":\"" + boardName + "\"}")
+                .when()
+                .post("/boards")
+                .then()
+                .statusCode(200)
+                .body("name", equalTo(boardName))
+                .body("id", notNullValue())
+                .body("lists", empty())
+                .extract()
+                .path("id");
+
+        // Then
+        Optional<BoardEntity> savedBoard = boardRepository.findById(boardId);
+
+        assertThat(savedBoard).isPresent();
+        assertThat(savedBoard.get().getName()).isEqualTo(boardName);
+        assertThat(savedBoard.get().getLists()).isEmpty();
+    }
+}package nu.forsenad.todo.infrastructure;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest
+class TodoApplicationTests {
+
+	@Test
+	void contextLoads() {
+	}
+
 }

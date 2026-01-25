@@ -36,6 +36,7 @@ public class Board {
     public String getId() {
         return id;
     }
+
     public String getName() {
         return name;
     }
@@ -96,4 +97,19 @@ public class Board {
         throw new IllegalArgumentException("Board " + this.id + " has no list with id " + listId);
     }
 
+    public TodoList getList(String listId) {
+        return lists.stream().filter(l -> l.getId().equals(listId)).findFirst().get();
+    }
+
+    public Board withReplacedList(TodoList newList) {
+        var existingLists = new ArrayList<>(getLists());
+        List<TodoList> newLists = existingLists.stream()
+                .map(l -> {
+                    if (l.getId().equals(newList.getId()))
+                        return newList;
+                    else
+                        return l;
+                }).toList();
+        return new Board(this.id, this.name, newLists);
+    }
 }
