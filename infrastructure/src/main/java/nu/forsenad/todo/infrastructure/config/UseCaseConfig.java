@@ -1,8 +1,6 @@
 package nu.forsenad.todo.infrastructure.config;
 
-import nu.forsenad.todo.ports.in.CreateBoardUseCase;
-import nu.forsenad.todo.ports.in.ListAllBoardsUseCase;
-import nu.forsenad.todo.ports.in.UpdateBoardUseCase;
+import nu.forsenad.todo.ports.in.*;
 import nu.forsenad.todo.ports.out.BoardRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -23,5 +21,35 @@ public class UseCaseConfig {
     @Bean
     public ListAllBoardsUseCase listAllBoardsUseCase(BoardRepository boardRepository) {
         return new ListAllBoardsUseCase(boardRepository);
+    }
+
+    @Bean
+    public GetBoardDetailsUseCase getBoardDetailsUseCase(BoardRepository boardRepository) {
+        return new GetBoardDetailsUseCase(boardRepository);
+    }
+
+    @Bean
+    public CreateListUseCase createListUseCase(BoardRepository boardRepository) {
+        return new CreateListUseCase(boardRepository);
+    }
+
+    @Bean
+    public DeleteListUseCase deleteListUseCase(BoardRepository boardRepository) {
+        return new DeleteListUseCase(boardRepository);
+    }
+
+    @Bean
+    public UpdateListTitleUseCase updateListTitleUseCase(BoardRepository boardRepository) {
+        return new UpdateListTitleUseCase(boardRepository);
+    }
+
+    @Bean
+    public MoveListWithinBoardUseCase moveListWithinBoardUseCase(BoardRepository boardRepository) {
+        return new MoveListWithinBoardUseCase(boardRepository);
+    }
+
+    @Bean
+    public CreateTodoUseCase createTodoUseCase(BoardRepository boardRepository) {
+        return new CreateTodoUseCase(boardRepository);
     }
 }

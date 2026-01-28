@@ -10,4 +10,6 @@ public interface SpringDataBoardRepository extends JpaRepository<BoardEntity, St
     @Query("SELECT b FROM BoardEntity b LEFT JOIN FETCH b.lists WHERE b.id = :id")
     Optional<BoardEntity> findByIdWithLists(@Param("id") String id);
 
+    @Query("SELECT b FROM BoardEntity b LEFT JOIN FETCH b.lists l WHERE l.id = :listId")
+    Optional<BoardEntity> findBoardByListId(@Param("listId") String listId);
 }

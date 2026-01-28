@@ -43,6 +43,8 @@ public class BoardRepositoryImpl implements BoardRepository {
 
     @Override
     public Board findBoardByListId(String listId) {
-        return null; //TODO
+        return jpaRepository.findBoardByListId(listId)
+                .map(BoardEntity::toDomain)
+                .orElseThrow(() -> new IllegalArgumentException("Board not found for list: " + listId));
     }
 }
