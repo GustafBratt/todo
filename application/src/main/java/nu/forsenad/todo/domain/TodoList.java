@@ -37,7 +37,7 @@ public class TodoList {
     }
 
     public List<Todo> getTodos() {
-        return Collections.unmodifiableList(todos);
+        return List.copyOf(todos);
     }
 
     public TodoList withTitle(String newTitle) {
@@ -57,5 +57,9 @@ public class TodoList {
         List<Todo> newList = new ArrayList<>(getTodos());
         newList.add(Todo.create(title, description));
         return new TodoList(this.id, this.title, newList);
+    }
+
+    public TodoList withNewTitle(String newTitle) {
+        return new TodoList(this.id, newTitle, this.todos);
     }
 }

@@ -35,4 +35,8 @@ public class Todo {
     public String getDescription() {
         return description;
     }
+
+    public Todo withNewFields(String title, String description) {
+        return new Todo(this.id, title, description);
+    }
 }

@@ -7,6 +7,7 @@ Each list has a number of ordered todos.
 The main purpose here is to tinker with ports and adapters architecture.
 
 ## Architectural decisions
+* Different modules for application and infrastructure ensuring compile time dependency check
 * Make illegal states unrepresentable
 * Domain model immutable
 * No "commands", use cases taks a list of arguments

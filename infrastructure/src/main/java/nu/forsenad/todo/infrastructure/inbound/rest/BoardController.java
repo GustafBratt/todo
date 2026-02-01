@@ -1,5 +1,6 @@
 package nu.forsenad.todo.infrastructure.inbound.rest;
 
+import io.swagger.v3.oas.annotations.Operation;
 import nu.forsenad.todo.domain.Board;
 import nu.forsenad.todo.infrastructure.inbound.rest.model.BoardModel;
 import nu.forsenad.todo.infrastructure.inbound.rest.model.CreateUpdateBoardRequest;
@@ -33,6 +34,7 @@ public class BoardController {
 
     // GET /boards - List all boards
     @GetMapping
+    @Operation(summary="List all boards")
     public ResponseEntity<List<BoardModel>> listBoards() {
         List<Board> boards = listAllBoardsUseCase.execute();
         List<BoardModel> models = boards.stream()
@@ -42,6 +44,7 @@ public class BoardController {
     }
 
     // GET /boards/{id} - Get board details
+    @Operation(summary = "Get one board")
     @GetMapping("/{id}")
     public ResponseEntity<BoardModel> getBoardDetails(@PathVariable String id) {
         Board board = getBoardDetailsUseCase.execute(id);
@@ -49,6 +52,7 @@ public class BoardController {
     }
 
     // POST /boards - Create new board
+    @Operation(summary="Create new board")
     @PostMapping
     public ResponseEntity<BoardModel> createBoard(@RequestBody CreateUpdateBoardRequest request) {
         Board newBoard = createBoardUseCase.execute(request.getName());
@@ -56,6 +60,7 @@ public class BoardController {
     }
 
     // PUT /boards/{id} - Update board
+    @Operation(summary = "Change name of board")
     @PutMapping("/{id}")
     public ResponseEntity<BoardModel> updateBoard(
             @PathVariable String id,

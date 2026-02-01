@@ -1,5 +1,6 @@
 package nu.forsenad.todo.infrastructure.inbound.rest;
 
+import io.swagger.v3.oas.annotations.Operation;
 import nu.forsenad.todo.domain.Board;
 import nu.forsenad.todo.infrastructure.inbound.rest.model.BoardModel;
 import nu.forsenad.todo.infrastructure.inbound.rest.model.CreateTodoRequest;
@@ -17,7 +18,8 @@ public class TodoController {
         this.createTodoUseCase = createTodoUseCase;
     }
 
-    // POST /todos - Create new todo in a list
+    // POST /todos - Create new todo in a
+    @Operation(summary = "Create new todo")
     @PostMapping
     public ResponseEntity<BoardModel> createTodo(@RequestBody CreateTodoRequest request) {
         Board updatedBoard = createTodoUseCase.execute(

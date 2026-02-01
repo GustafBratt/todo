@@ -1,23 +1,23 @@
 package nu.forsenad.todo.ports.in;
 
-import nu.forsenad.todo.domain.Board;
-import nu.forsenad.todo.ports.out.BoardRepository;
+import nu.forsenad.todo.domain.TodoList;
+import nu.forsenad.todo.ports.out.ListRepository;
 
 public class UpdateListTitleUseCase {
-    private final BoardRepository boardRepository;
+    private final ListRepository listRepository;
 
     public UpdateListTitleUseCase(
-            BoardRepository boardRepository
+            ListRepository listRepository
     ) {
-        this.boardRepository = boardRepository;
+        this.listRepository = listRepository;
     }
 
-    public Board execute(String listId, String newTitle) {
-        Board existingBoard = boardRepository.findBoardByListId(listId);
+    public TodoList execute(String listId, String newTitle) {
+        TodoList existingList = listRepository.findById(listId);
 
-        Board updated = existingBoard.withRenamedList(listId, newTitle);
+        TodoList updated = existingList.withNewTitle(newTitle);
 
-        boardRepository.save(updated);
+        listRepository.save(updated);
         return updated;
     }
 }

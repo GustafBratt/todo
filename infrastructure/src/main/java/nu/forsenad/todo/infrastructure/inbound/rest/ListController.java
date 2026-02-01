@@ -1,5 +1,6 @@
 package nu.forsenad.todo.infrastructure.inbound.rest;
 
+import io.swagger.v3.oas.annotations.Operation;
 import nu.forsenad.todo.domain.Board;
 import nu.forsenad.todo.infrastructure.inbound.rest.model.BoardModel;
 import nu.forsenad.todo.infrastructure.inbound.rest.model.CreateListRequest;
@@ -32,6 +33,7 @@ public class ListController {
     }
 
     // POST /lists - Create new list on a board
+    @Operation(summary = "Create new list on a board")
     @PostMapping
     public ResponseEntity<BoardModel> createList(@RequestBody CreateListRequest request) {
         Board updatedBoard = createListUseCase.execute(request.getBoardId(), request.getName());
@@ -39,6 +41,7 @@ public class ListController {
     }
 
     // DELETE /lists/{id} - Delete a list
+    @Operation(summary = "Delete a list")
     @DeleteMapping("/{id}")
     public ResponseEntity<BoardModel> deleteList(@PathVariable String id) {
         Board updatedBoard = deleteListUseCase.execute(id);
@@ -46,6 +49,7 @@ public class ListController {
     }
 
     // PUT /lists/{id} - Update list title
+    @Operation(summary="Update list title")
     @PutMapping("/{id}")
     public ResponseEntity<BoardModel> updateListTitle(
             @PathVariable String id,
@@ -55,6 +59,7 @@ public class ListController {
     }
 
     // PUT /lists/{id}/move - Move list to new position
+    @Operation(summary = "Move a list within a board. Positions are 0-indexed.")
     @PutMapping("/{id}/move")
     public ResponseEntity<BoardModel> moveList(
             @PathVariable String id,

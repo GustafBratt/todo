@@ -1,3 +1,34 @@
+# Todo app
+This is a simple proof of concept app for todos, inspired by 
+Trello. There are a number of boards. Each board has a number of orderd lists.
+Each list has a number of ordered todos.
+
+## Purpose
+The main purpose here is to tinker with ports and adapters architecture.
+
+## Architectural decisions
+* Different modules for application and infrastructure ensuring compile time dependency check
+* Make illegal states unrepresentable
+* Domain model immutable
+* No "commands", use cases taks a list of arguments
+* No spring boot in applicaton module
+
+## Plan for use cases and endpoints
+| Use Case | Description | Endpoint | Method |
+|----------|-------------|----------|--------|
+| List all boards | View all available boards in the system | /boards | GET |
+| Create a board | Create a new board with a title and optional description | /boards | POST |
+| Get board details | Retrieve a specific board with all its lists and cards | /boards/:id | GET |
+| Update board | Modify board properties like title, description, or color | /boards/:id | PUT |
+| Delete board | Remove a board and all its lists and cards | /boards/:id | DELETE |
+| Create a list | Add a new list/column to a board | /boards/:boardId/lists | POST |
+| Update list | Change a list's properties like its title | /lists/:id | PUT |
+| Reorder list | Change a list's position within its board | /lists/:id/position | PUT |
+| Delete list | Remove a list and all its cards | /lists/:id | DELETE |
+| Create a card | Add a new task card to a list | /lists/:listId/cards | POST |
+| Update card | Modify card properties like title, description, or due date | /cards/:id | PUT |
+| Move/reorder card | Change a card's position within a list or move it to a different list | /cards/:id/position | PUT |
+| Delete card | Remove a card from the system | /cards/:id | DELETE |
 package nu.forsenad.todo.domain;
 
 import java.util.ArrayList;
@@ -866,9 +897,7 @@ class UpdateBoardUseCaseTest {
     }
 }package nu.forsenad.todo.infrastructure.config;
 
-import nu.forsenad.todo.ports.in.CreateBoardUseCase;
-import nu.forsenad.todo.ports.in.ListAllBoardsUseCase;
-import nu.forsenad.todo.ports.in.UpdateBoardUseCase;
+import nu.forsenad.todo.ports.in.*;
 import nu.forsenad.todo.ports.out.BoardRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -890,15 +919,66 @@ public class UseCaseConfig {
     public ListAllBoardsUseCase listAllBoardsUseCase(BoardRepository boardRepository) {
         return new ListAllBoardsUseCase(boardRepository);
     }
+
+    @Bean
+    public GetBoardDetailsUseCase getBoardDetailsUseCase(BoardRepository boardRepository) {
+        return new GetBoardDetailsUseCase(boardRepository);
+    }
+
+    @Bean
+    public CreateListUseCase createListUseCase(BoardRepository boardRepository) {
+        return new CreateListUseCase(boardRepository);
+    }
+
+    @Bean
+    public DeleteListUseCase deleteListUseCase(BoardRepository boardRepository) {
+        return new DeleteListUseCase(boardRepository);
+    }
+
+    @Bean
+    public UpdateListTitleUseCase updateListTitleUseCase(BoardRepository boardRepository) {
+        return new UpdateListTitleUseCase(boardRepository);
+    }
+
+    @Bean
+    public MoveListWithinBoardUseCase moveListWithinBoardUseCase(BoardRepository boardRepository) {
+        return new MoveListWithinBoardUseCase(boardRepository);
+    }
+
+    @Bean
+    public CreateTodoUseCase createTodoUseCase(BoardRepository boardRepository) {
+        return new CreateTodoUseCase(boardRepository);
+    }
+}package nu.forsenad.todo.infrastructure.config;
+
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
+
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**")
+                .allowedOrigins("http://localhost:5173", "http://localhost:3000")
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedHeaders("*")
+                .allowCredentials(true);
+    }
 }package nu.forsenad.todo.infrastructure.inbound.rest;
 
 import nu.forsenad.todo.domain.Board;
 import nu.forsenad.todo.infrastructure.inbound.rest.model.BoardModel;
 import nu.forsenad.todo.infrastructure.inbound.rest.model.CreateUpdateBoardRequest;
 import nu.forsenad.todo.ports.in.CreateBoardUseCase;
+import nu.forsenad.todo.ports.in.GetBoardDetailsUseCase;
+import nu.forsenad.todo.ports.in.ListAllBoardsUseCase;
 import nu.forsenad.todo.ports.in.UpdateBoardUseCase;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/boards")
@@ -906,29 +986,115 @@ public class BoardController {
 
     private final CreateBoardUseCase createBoardUseCase;
     private final UpdateBoardUseCase updateBoardUseCase;
+    private final GetBoardDetailsUseCase getBoardDetailsUseCase;
+    private final ListAllBoardsUseCase listAllBoardsUseCase;
 
     public BoardController(CreateBoardUseCase createBoardUseCase,
-                           UpdateBoardUseCase updateBoardUseCase) {
+                           UpdateBoardUseCase updateBoardUseCase,
+                           GetBoardDetailsUseCase getBoardDetailsUseCase,
+                           ListAllBoardsUseCase listAllBoardsUseCase) {
         this.createBoardUseCase = createBoardUseCase;
         this.updateBoardUseCase = updateBoardUseCase;
+        this.getBoardDetailsUseCase = getBoardDetailsUseCase;
+        this.listAllBoardsUseCase = listAllBoardsUseCase;
     }
 
-    // curl -X POST http://localhost:8080/boards -H "Content-Type: application/json" -d '{"name":"My First Board"}'
+    // GET /boards - List all boards
+    @GetMapping
+    public ResponseEntity<List<BoardModel>> listBoards() {
+        List<Board> boards = listAllBoardsUseCase.execute();
+        List<BoardModel> models = boards.stream()
+                .map(BoardModel::new)
+                .toList();
+        return ResponseEntity.ok(models);
+    }
 
+    // GET /boards/{id} - Get board details
+    @GetMapping("/{id}")
+    public ResponseEntity<BoardModel> getBoardDetails(@PathVariable String id) {
+        Board board = getBoardDetailsUseCase.execute(id);
+        return ResponseEntity.ok(new BoardModel(board));
+    }
+
+    // POST /boards - Create new board
     @PostMapping
     public ResponseEntity<BoardModel> createBoard(@RequestBody CreateUpdateBoardRequest request) {
         Board newBoard = createBoardUseCase.execute(request.getName());
         return ResponseEntity.ok(new BoardModel(newBoard));
     }
 
+    // PUT /boards/{id} - Update board
     @PutMapping("/{id}")
     public ResponseEntity<BoardModel> updateBoard(
             @PathVariable String id,
             @RequestBody CreateUpdateBoardRequest request) {
-        Board newBoard = updateBoardUseCase.execute(id, request.getName());
-        return ResponseEntity.ok(new BoardModel(newBoard));
+        Board updatedBoard = updateBoardUseCase.execute(id, request.getName());
+        return ResponseEntity.ok(new BoardModel(updatedBoard));
+    }
+}package nu.forsenad.todo.infrastructure.inbound.rest;
+
+import nu.forsenad.todo.domain.Board;
+import nu.forsenad.todo.infrastructure.inbound.rest.model.BoardModel;
+import nu.forsenad.todo.infrastructure.inbound.rest.model.CreateListRequest;
+import nu.forsenad.todo.infrastructure.inbound.rest.model.MoveListRequest;
+import nu.forsenad.todo.infrastructure.inbound.rest.model.UpdateListRequest;
+import nu.forsenad.todo.ports.in.CreateListUseCase;
+import nu.forsenad.todo.ports.in.DeleteListUseCase;
+import nu.forsenad.todo.ports.in.MoveListWithinBoardUseCase;
+import nu.forsenad.todo.ports.in.UpdateListTitleUseCase;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/lists")
+public class ListController {
+
+    private final CreateListUseCase createListUseCase;
+    private final DeleteListUseCase deleteListUseCase;
+    private final UpdateListTitleUseCase updateListTitleUseCase;
+    private final MoveListWithinBoardUseCase moveListWithinBoardUseCase;
+
+    public ListController(CreateListUseCase createListUseCase,
+                          DeleteListUseCase deleteListUseCase,
+                          UpdateListTitleUseCase updateListTitleUseCase,
+                          MoveListWithinBoardUseCase moveListWithinBoardUseCase) {
+        this.createListUseCase = createListUseCase;
+        this.deleteListUseCase = deleteListUseCase;
+        this.updateListTitleUseCase = updateListTitleUseCase;
+        this.moveListWithinBoardUseCase = moveListWithinBoardUseCase;
     }
 
+    // POST /lists - Create new list on a board
+    @PostMapping
+    public ResponseEntity<BoardModel> createList(@RequestBody CreateListRequest request) {
+        Board updatedBoard = createListUseCase.execute(request.getBoardId(), request.getName());
+        return ResponseEntity.ok(new BoardModel(updatedBoard));
+    }
+
+    // DELETE /lists/{id} - Delete a list
+    @DeleteMapping("/{id}")
+    public ResponseEntity<BoardModel> deleteList(@PathVariable String id) {
+        Board updatedBoard = deleteListUseCase.execute(id);
+        return ResponseEntity.ok(new BoardModel(updatedBoard));
+    }
+
+    // PUT /lists/{id} - Update list title
+    @PutMapping("/{id}")
+    public ResponseEntity<BoardModel> updateListTitle(
+            @PathVariable String id,
+            @RequestBody UpdateListRequest request) {
+        Board updatedBoard = updateListTitleUseCase.execute(id, request.getTitle());
+        return ResponseEntity.ok(new BoardModel(updatedBoard));
+    }
+
+    // PUT /lists/{id}/move - Move list to new position
+    @PutMapping("/{id}/move")
+    public ResponseEntity<BoardModel> moveList(
+            @PathVariable String id,
+            @RequestBody MoveListRequest request) {
+        Board updatedBoard = moveListWithinBoardUseCase.execute(id, request.getPosition());
+        return ResponseEntity.ok(new BoardModel(updatedBoard));
+    }
 }package nu.forsenad.todo.infrastructure.inbound.rest.model;
 
 import nu.forsenad.todo.domain.Board;
@@ -963,6 +1129,62 @@ public class BoardModel {
 }
 package nu.forsenad.todo.infrastructure.inbound.rest.model;
 
+// CreateListRequest.java
+public class CreateListRequest {
+    private String boardId;
+    private String name;
+
+    public String getBoardId() {
+        return boardId;
+    }
+
+    public void setBoardId(String boardId) {
+        this.boardId = boardId;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+}
+
+package nu.forsenad.todo.infrastructure.inbound.rest.model;
+
+// CreateTodoRequest.java
+public class CreateTodoRequest {
+    private String listId;
+    private String title;
+    private String description;
+
+    public String getListId() {
+        return listId;
+    }
+
+    public void setListId(String listId) {
+        this.listId = listId;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+}
+package nu.forsenad.todo.infrastructure.inbound.rest.model;
+
 public class CreateUpdateBoardRequest {
     private String name;
 
@@ -977,14 +1199,118 @@ public class CreateUpdateBoardRequest {
 }
 package nu.forsenad.todo.infrastructure.inbound.rest.model;
 
-import nu.forsenad.todo.domain.TodoList;
+// MoveListRequest.java
+public class MoveListRequest {
+    private int position;
 
-public class TodoListModel {
-    public TodoListModel(TodoList domList) {
-        //TODO
+    public int getPosition() {
+        return position;
+    }
+
+    public void setPosition(int position) {
+        this.position = position;
     }
 }
-package nu.forsenad.todo.infrastructure.outbound.entity;
+package nu.forsenad.todo.infrastructure.inbound.rest.model;
+
+import nu.forsenad.todo.domain.TodoList;
+
+import java.util.List;
+
+public class TodoListModel {
+    private String id;
+    private String title;
+    private List<TodoModel> todos;
+
+    public TodoListModel(TodoList domainList) {
+        this.id = domainList.getId();
+        this.title = domainList.getTitle();
+        this.todos = domainList.getTodos().stream()
+                .map(TodoModel::new)
+                .toList();
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public List<TodoModel> getTodos() {
+        return todos;
+    }
+}package nu.forsenad.todo.infrastructure.inbound.rest.model;
+
+import nu.forsenad.todo.domain.Todo;
+
+class TodoModel {
+    private String id;
+    private String title;
+    private String description;
+
+    public TodoModel(Todo domainTodo) {
+        this.id = domainTodo.getId();
+        this.title = domainTodo.getTitle();
+        this.description = domainTodo.getDescription();
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+}package nu.forsenad.todo.infrastructure.inbound.rest.model;
+
+// UpdateListRequest.java
+public class UpdateListRequest {
+    private String title;
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+}
+package nu.forsenad.todo.infrastructure.inbound.rest;
+
+import nu.forsenad.todo.domain.Board;
+import nu.forsenad.todo.infrastructure.inbound.rest.model.BoardModel;
+import nu.forsenad.todo.infrastructure.inbound.rest.model.CreateTodoRequest;
+import nu.forsenad.todo.ports.in.CreateTodoUseCase;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/todos")
+public class TodoController {
+
+    private final CreateTodoUseCase createTodoUseCase;
+
+    public TodoController(CreateTodoUseCase createTodoUseCase) {
+        this.createTodoUseCase = createTodoUseCase;
+    }
+
+    // POST /todos - Create new todo in a list
+    @PostMapping
+    public ResponseEntity<BoardModel> createTodo(@RequestBody CreateTodoRequest request) {
+        Board updatedBoard = createTodoUseCase.execute(
+                request.getListId(),
+                request.getTitle(),
+                request.getDescription()
+        );
+        return ResponseEntity.ok(new BoardModel(updatedBoard));
+    }
+}package nu.forsenad.todo.infrastructure.outbound.entity;
 
 import jakarta.persistence.*;
 import nu.forsenad.todo.domain.Board;
@@ -1189,7 +1515,9 @@ public class BoardRepositoryImpl implements BoardRepository {
 
     @Override
     public Board findBoardByListId(String listId) {
-        return null; //TODO
+        return jpaRepository.findBoardByListId(listId)
+                .map(BoardEntity::toDomain)
+                .orElseThrow(() -> new IllegalArgumentException("Board not found for list: " + listId));
     }
 }package nu.forsenad.todo.infrastructure.outbound.repo;
 import nu.forsenad.todo.infrastructure.outbound.entity.BoardEntity;
@@ -1203,8 +1531,9 @@ public interface SpringDataBoardRepository extends JpaRepository<BoardEntity, St
     @Query("SELECT b FROM BoardEntity b LEFT JOIN FETCH b.lists WHERE b.id = :id")
     Optional<BoardEntity> findByIdWithLists(@Param("id") String id);
 
-}
-package nu.forsenad.todo.infrastructure;
+    @Query("SELECT b FROM BoardEntity b LEFT JOIN FETCH b.lists l WHERE l.id = :listId")
+    Optional<BoardEntity> findBoardByListId(@Param("listId") String listId);
+}package nu.forsenad.todo.infrastructure;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
