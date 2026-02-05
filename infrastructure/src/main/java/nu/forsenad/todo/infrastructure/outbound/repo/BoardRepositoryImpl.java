@@ -1,6 +1,7 @@
 package nu.forsenad.todo.infrastructure.outbound.repo;
 
 import nu.forsenad.todo.domain.Board;
+import nu.forsenad.todo.domain.Todo;
 import nu.forsenad.todo.infrastructure.outbound.entity.BoardEntity;
 import nu.forsenad.todo.ports.out.BoardRepository;
 import org.springframework.stereotype.Repository;
@@ -47,4 +48,12 @@ public class BoardRepositoryImpl implements BoardRepository {
                 .map(BoardEntity::toDomain)
                 .orElseThrow(() -> new IllegalArgumentException("Board not found for list: " + listId));
     }
+
+    @Override
+    public Board findBoardByTodoId(String todoId) {
+        return jpaRepository.findBoardByTodoId(todoId).map(BoardEntity::toDomain)
+                .orElseThrow(() -> new IllegalArgumentException("Board not found for todo: " + todoId));
+    }
+
+
 }

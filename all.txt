@@ -34,7 +34,7 @@ package nu.forsenad.todo.domain;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Board {
+public final class Board {
     private final String id;
     private final String name;
     private final List<TodoList> lists;
@@ -143,11 +143,14 @@ public class Board {
                 }).toList();
         return new Board(this.id, this.name, newLists);
     }
+
+    public Board withUpdatedTodo(String todoId, String title, String description) {
+    }
 }package nu.forsenad.todo.domain;
 
 import java.util.UUID;
 
-public class Todo {
+public final class Todo {
     private final String id;
     private final String title;
     private final String description;
@@ -180,13 +183,16 @@ public class Todo {
     public String getDescription() {
         return description;
     }
+
+    public Todo withNewFields(String title, String description) {
+        return new Todo(this.id, title, description);
+    }
 }package nu.forsenad.todo.domain;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
-public class TodoList {
+public final class TodoList {
     private final String id;
     private final String title;
     private final List<Todo> todos;
@@ -219,7 +225,7 @@ public class TodoList {
     }
 
     public List<Todo> getTodos() {
-        return Collections.unmodifiableList(todos);
+        return List.copyOf(todos);
     }
 
     public TodoList withTitle(String newTitle) {
@@ -239,6 +245,10 @@ public class TodoList {
         List<Todo> newList = new ArrayList<>(getTodos());
         newList.add(Todo.create(title, description));
         return new TodoList(this.id, this.title, newList);
+    }
+
+    public TodoList withNewTitle(String newTitle) {
+        return new TodoList(this.id, newTitle, this.todos);
     }
 }package nu.forsenad.todo.ports.in;
 
@@ -421,6 +431,25 @@ public class UpdateBoardUseCase {
 import nu.forsenad.todo.domain.Board;
 import nu.forsenad.todo.ports.out.BoardRepository;
 
+public class UpdateCardUseCase {
+    private final BoardRepository boardRepository;
+
+    public UpdateCardUseCase(BoardRepository boardRepository) {
+        this.boardRepository = boardRepository;
+    }
+
+    public Board execute(String todoId, String title, String description) {
+        Board existing = boardRepository.findBoardByTodoId(todoId);
+        Board updated = existing.withUpdatedTodo(todoId, title, description);
+        boardRepository.save(updated);
+        return updated;
+    }
+}
+package nu.forsenad.todo.ports.in;
+
+import nu.forsenad.todo.domain.Board;
+import nu.forsenad.todo.ports.out.BoardRepository;
+
 public class UpdateListTitleUseCase {
     private final BoardRepository boardRepository;
 
@@ -433,14 +462,15 @@ public class UpdateListTitleUseCase {
     public Board execute(String listId, String newTitle) {
         Board existingBoard = boardRepository.findBoardByListId(listId);
 
-        Board updated = existingBoard.withRenamedList(listId, newTitle);
+        Board updatedBoard = existingBoard.withRenamedList(listId, newTitle);
 
-        boardRepository.save(updated);
-        return updated;
+        boardRepository.save(updatedBoard);
+        return updatedBoard;
     }
 }package nu.forsenad.todo.ports.out;
 
 import nu.forsenad.todo.domain.Board;
+import nu.forsenad.todo.domain.Todo;
 
 import java.util.List;
 
@@ -454,6 +484,25 @@ public interface BoardRepository {
     List<Board> findAll();
 
     Board findBoardByListId(String listId);
+
+    Board findBoardByTodoId(String todoId);
+
+}package nu.forsenad.todo.ports.out;
+
+import nu.forsenad.todo.domain.Todo;
+
+import java.util.List;
+
+public interface TodoRepository {
+    void save(Todo board);
+
+    boolean exists(String todoId);
+
+    Todo findById(String todoId);
+
+    List<Todo> findAll();
+    
+    Todo findTodoByid(String todoId);
 }package nu.forsenad.todo.ports.in;
 
 import nu.forsenad.todo.domain.Board;
@@ -968,6 +1017,7 @@ public class WebConfig implements WebMvcConfigurer {
     }
 }package nu.forsenad.todo.infrastructure.inbound.rest;
 
+import io.swagger.v3.oas.annotations.Operation;
 import nu.forsenad.todo.domain.Board;
 import nu.forsenad.todo.infrastructure.inbound.rest.model.BoardModel;
 import nu.forsenad.todo.infrastructure.inbound.rest.model.CreateUpdateBoardRequest;
@@ -1001,6 +1051,7 @@ public class BoardController {
 
     // GET /boards - List all boards
     @GetMapping
+    @Operation(summary="List all boards")
     public ResponseEntity<List<BoardModel>> listBoards() {
         List<Board> boards = listAllBoardsUseCase.execute();
         List<BoardModel> models = boards.stream()
@@ -1010,6 +1061,7 @@ public class BoardController {
     }
 
     // GET /boards/{id} - Get board details
+    @Operation(summary = "Get one board")
     @GetMapping("/{id}")
     public ResponseEntity<BoardModel> getBoardDetails(@PathVariable String id) {
         Board board = getBoardDetailsUseCase.execute(id);
@@ -1017,6 +1069,7 @@ public class BoardController {
     }
 
     // POST /boards - Create new board
+    @Operation(summary="Create new board")
     @PostMapping
     public ResponseEntity<BoardModel> createBoard(@RequestBody CreateUpdateBoardRequest request) {
         Board newBoard = createBoardUseCase.execute(request.getName());
@@ -1024,6 +1077,7 @@ public class BoardController {
     }
 
     // PUT /boards/{id} - Update board
+    @Operation(summary = "Change name of board")
     @PutMapping("/{id}")
     public ResponseEntity<BoardModel> updateBoard(
             @PathVariable String id,
@@ -1033,11 +1087,10 @@ public class BoardController {
     }
 }package nu.forsenad.todo.infrastructure.inbound.rest;
 
+import io.swagger.v3.oas.annotations.Operation;
 import nu.forsenad.todo.domain.Board;
-import nu.forsenad.todo.infrastructure.inbound.rest.model.BoardModel;
-import nu.forsenad.todo.infrastructure.inbound.rest.model.CreateListRequest;
-import nu.forsenad.todo.infrastructure.inbound.rest.model.MoveListRequest;
-import nu.forsenad.todo.infrastructure.inbound.rest.model.UpdateListRequest;
+import nu.forsenad.todo.domain.TodoList;
+import nu.forsenad.todo.infrastructure.inbound.rest.model.*;
 import nu.forsenad.todo.ports.in.CreateListUseCase;
 import nu.forsenad.todo.ports.in.DeleteListUseCase;
 import nu.forsenad.todo.ports.in.MoveListWithinBoardUseCase;
@@ -1065,6 +1118,7 @@ public class ListController {
     }
 
     // POST /lists - Create new list on a board
+    @Operation(summary = "Create new list on a board")
     @PostMapping
     public ResponseEntity<BoardModel> createList(@RequestBody CreateListRequest request) {
         Board updatedBoard = createListUseCase.execute(request.getBoardId(), request.getName());
@@ -1072,6 +1126,7 @@ public class ListController {
     }
 
     // DELETE /lists/{id} - Delete a list
+    @Operation(summary = "Delete a list")
     @DeleteMapping("/{id}")
     public ResponseEntity<BoardModel> deleteList(@PathVariable String id) {
         Board updatedBoard = deleteListUseCase.execute(id);
@@ -1079,15 +1134,17 @@ public class ListController {
     }
 
     // PUT /lists/{id} - Update list title
+    @Operation(summary="Update list title")
     @PutMapping("/{id}")
-    public ResponseEntity<BoardModel> updateListTitle(
+    public ResponseEntity<TodoListModel> updateListTitle(
             @PathVariable String id,
             @RequestBody UpdateListRequest request) {
-        Board updatedBoard = updateListTitleUseCase.execute(id, request.getTitle());
-        return ResponseEntity.ok(new BoardModel(updatedBoard));
+        TodoList updatedBoard = updateListTitleUseCase.execute(id, request.getTitle());
+        return ResponseEntity.ok(new TodoListModel(updatedBoard));
     }
 
     // PUT /lists/{id}/move - Move list to new position
+    @Operation(summary = "Move a list within a board. Positions are 0-indexed.")
     @PutMapping("/{id}/move")
     public ResponseEntity<BoardModel> moveList(
             @PathVariable String id,
@@ -1283,6 +1340,7 @@ public class UpdateListRequest {
 }
 package nu.forsenad.todo.infrastructure.inbound.rest;
 
+import io.swagger.v3.oas.annotations.Operation;
 import nu.forsenad.todo.domain.Board;
 import nu.forsenad.todo.infrastructure.inbound.rest.model.BoardModel;
 import nu.forsenad.todo.infrastructure.inbound.rest.model.CreateTodoRequest;
@@ -1300,7 +1358,8 @@ public class TodoController {
         this.createTodoUseCase = createTodoUseCase;
     }
 
-    // POST /todos - Create new todo in a list
+    // POST /todos - Create new todo in a
+    @Operation(summary = "Create new todo")
     @PostMapping
     public ResponseEntity<BoardModel> createTodo(@RequestBody CreateTodoRequest request) {
         Board updatedBoard = createTodoUseCase.execute(
@@ -1473,6 +1532,7 @@ public class TodoEntity {
 }package nu.forsenad.todo.infrastructure.outbound.repo;
 
 import nu.forsenad.todo.domain.Board;
+import nu.forsenad.todo.domain.Todo;
 import nu.forsenad.todo.infrastructure.outbound.entity.BoardEntity;
 import nu.forsenad.todo.ports.out.BoardRepository;
 import org.springframework.stereotype.Repository;
@@ -1519,6 +1579,14 @@ public class BoardRepositoryImpl implements BoardRepository {
                 .map(BoardEntity::toDomain)
                 .orElseThrow(() -> new IllegalArgumentException("Board not found for list: " + listId));
     }
+
+    @Override
+    public Board findBoardByTodoId(String todoId) {
+        return jpaRepository.findBoardByTodoId(todoId).map(BoardEntity::toDomain)
+                .orElseThrow(() -> new IllegalArgumentException("Board not found for todo: " + todoId));
+    }
+
+
 }package nu.forsenad.todo.infrastructure.outbound.repo;
 import nu.forsenad.todo.infrastructure.outbound.entity.BoardEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -1528,11 +1596,10 @@ import org.springframework.data.repository.query.Param;
 import java.util.Optional;
 
 public interface SpringDataBoardRepository extends JpaRepository<BoardEntity, String> {
-    @Query("SELECT b FROM BoardEntity b LEFT JOIN FETCH b.lists WHERE b.id = :id")
-    Optional<BoardEntity> findByIdWithLists(@Param("id") String id);
 
-    @Query("SELECT b FROM BoardEntity b LEFT JOIN FETCH b.lists l WHERE l.id = :listId")
     Optional<BoardEntity> findBoardByListId(@Param("listId") String listId);
+
+    Optional<BoardEntity> findBoardByTodoId(@Param("todoId") String todoId);
 }package nu.forsenad.todo.infrastructure;
 
 import org.springframework.boot.SpringApplication;
@@ -1546,7 +1613,69 @@ public class TodoApplication {
 	}
 
 }
-package nu.forsenad.todo.infrastructure;
+package archtest;
+
+import com.tngtech.archunit.core.domain.JavaClasses;
+import com.tngtech.archunit.core.domain.JavaModifier;
+import com.tngtech.archunit.core.importer.ClassFileImporter;
+import com.tngtech.archunit.lang.ArchRule;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.fields;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
+
+/**
+ * ArchUnit test to verify domain model immutability.
+ *
+ * Based on the architectural decision that the domain model should be immutable.
+ */
+class DomainImmutabilityArchTest {
+
+    private static JavaClasses domainClasses;
+
+    @BeforeAll
+    static void importClasses() {
+        domainClasses = new ClassFileImporter()
+                .importPackages("nu.forsenad.todo.domain");
+    }
+
+    @Test
+    void allInstanceFieldsShouldBeFinal() {
+        ArchRule rule = fields()
+                .that().areDeclaredInClassesThat().resideInAPackage("..domain..")
+                .and().areNotStatic()
+                .should().beFinal()
+                .because("all domain objects should be immutable with final fields");
+
+        rule.check(domainClasses);
+    }
+
+    @Test
+    void domainClassesShouldBeFinal() {
+        ArchRule rule = classes()
+                .that().resideInAPackage("..domain..")
+                .and().areNotInterfaces()
+                .and().areNotEnums()
+                .should().haveModifier(JavaModifier.FINAL)
+                .because("domain classes should be final to ensure complete immutability");
+
+        rule.check(domainClasses);
+    }
+
+    @Test
+    void domainClassesShouldNotHaveSetters() {
+        ArchRule noSettersRule = methods()
+                .that().areDeclaredInClassesThat().resideInAPackage("..domain..")
+                .and().areNotStatic()
+                .and().arePublic()
+                .should().haveNameNotMatching("set[A-Z].*")
+                .because("immutable objects should not have setter methods");
+
+        noSettersRule.check(domainClasses);
+    }
+}package nu.forsenad.todo.infrastructure;
 
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;

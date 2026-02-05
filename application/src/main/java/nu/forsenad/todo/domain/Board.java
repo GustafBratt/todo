@@ -3,7 +3,7 @@ package nu.forsenad.todo.domain;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Board {
+public final class Board {
     private final String id;
     private final String name;
     private final List<TodoList> lists;
@@ -110,6 +110,31 @@ public class Board {
                     else
                         return l;
                 }).toList();
+        return new Board(this.id, this.name, newLists);
+    }
+
+    public Board withUpdatedTodo(String todoId, String title, String description) {
+        List<TodoList> newLists = lists.stream()
+                .map(list -> {
+                    // Check if this list contains the todo
+                    boolean hasTodo = list.getTodos().stream()
+                            .anyMatch(todo -> todo.getId().equals(todoId));
+
+                    if (hasTodo) {
+                        // Update the todo in this list
+                        List<Todo> updatedTodos = list.getTodos().stream()
+                                .map(todo -> todo.getId().equals(todoId)
+                                        ? todo.withNewFields(title, description)
+                                        : todo)
+                                .toList();
+                        return new TodoList(list.getId(), list.getTitle(), updatedTodos);
+                    } else {
+                        // Return the list unchanged
+                        return list;
+                    }
+                })
+                .toList();
+
         return new Board(this.id, this.name, newLists);
     }
 }

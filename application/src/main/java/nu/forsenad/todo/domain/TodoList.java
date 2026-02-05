@@ -1,10 +1,9 @@
 package nu.forsenad.todo.domain;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
-public class TodoList {
+public final class TodoList {
     private final String id;
     private final String title;
     private final List<Todo> todos;

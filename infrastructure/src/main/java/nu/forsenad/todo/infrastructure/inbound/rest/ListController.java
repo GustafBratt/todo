@@ -2,10 +2,8 @@ package nu.forsenad.todo.infrastructure.inbound.rest;
 
 import io.swagger.v3.oas.annotations.Operation;
 import nu.forsenad.todo.domain.Board;
-import nu.forsenad.todo.infrastructure.inbound.rest.model.BoardModel;
-import nu.forsenad.todo.infrastructure.inbound.rest.model.CreateListRequest;
-import nu.forsenad.todo.infrastructure.inbound.rest.model.MoveListRequest;
-import nu.forsenad.todo.infrastructure.inbound.rest.model.UpdateListRequest;
+import nu.forsenad.todo.domain.TodoList;
+import nu.forsenad.todo.infrastructure.inbound.rest.model.*;
 import nu.forsenad.todo.ports.in.CreateListUseCase;
 import nu.forsenad.todo.ports.in.DeleteListUseCase;
 import nu.forsenad.todo.ports.in.MoveListWithinBoardUseCase;
@@ -51,11 +49,11 @@ public class ListController {
     // PUT /lists/{id} - Update list title
     @Operation(summary="Update list title")
     @PutMapping("/{id}")
-    public ResponseEntity<BoardModel> updateListTitle(
+    public ResponseEntity<TodoListModel> updateListTitle(
             @PathVariable String id,
             @RequestBody UpdateListRequest request) {
-        Board updatedBoard = updateListTitleUseCase.execute(id, request.getTitle());
-        return ResponseEntity.ok(new BoardModel(updatedBoard));
+        TodoList updatedBoard = updateListTitleUseCase.execute(id, request.getTitle());
+        return ResponseEntity.ok(new TodoListModel(updatedBoard));
     }
 
     // PUT /lists/{id}/move - Move list to new position

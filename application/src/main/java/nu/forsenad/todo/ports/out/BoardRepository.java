@@ -16,5 +16,6 @@ public interface BoardRepository {
 
     Board findBoardByListId(String listId);
 
-    Todo findTodoByid(String todoId);
+    Board findBoardByTodoId(String todoId);
+
 }

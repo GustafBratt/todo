@@ -2,7 +2,6 @@ package nu.forsenad.todo.infrastructure.config;
 
 import nu.forsenad.todo.ports.in.*;
 import nu.forsenad.todo.ports.out.BoardRepository;
-import nu.forsenad.todo.ports.out.ListRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -40,8 +39,8 @@ public class UseCaseConfig {
     }
 
     @Bean
-    public UpdateListTitleUseCase updateListTitleUseCase(ListRepository listRepository) {
-        return new UpdateListTitleUseCase(listRepository);
+    public UpdateListTitleUseCase updateListTitleUseCase(BoardRepository boardRepository) {
+        return new UpdateListTitleUseCase(boardRepository);
     }
 
     @Bean

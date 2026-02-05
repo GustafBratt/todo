@@ -1,19 +1,19 @@
 package nu.forsenad.todo.ports.in;
 
-import nu.forsenad.todo.domain.Todo;
-import nu.forsenad.todo.ports.out.TodoRepository;
+import nu.forsenad.todo.domain.Board;
+import nu.forsenad.todo.ports.out.BoardRepository;
 
 public class UpdateCardUseCase {
-    private final TodoRepository todoRepository;
+    private final BoardRepository boardRepository;
 
-    public UpdateCardUseCase(TodoRepository todoRepository) {
-        this.todoRepository = todoRepository;
+    public UpdateCardUseCase(BoardRepository boardRepository) {
+        this.boardRepository = boardRepository;
     }
 
-    public Todo execute(String todoId, String title, String description) {
-        Todo existing = todoRepository.findTodoByid(todoId);
-        Todo updated = existing.withNewFields(title, description);
-        todoRepository.save(updated);
+    public Board execute(String todoId, String title, String description) {
+        Board existing = boardRepository.findBoardByTodoId(todoId);
+        Board updated = existing.withUpdatedTodo(todoId, title, description);
+        boardRepository.save(updated);
         return updated;
     }
 }

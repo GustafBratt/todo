@@ -2,7 +2,7 @@ package nu.forsenad.todo.domain;
 
 import java.util.UUID;
 
-public class Todo {
+public final class Todo {
     private final String id;
     private final String title;
     private final String description;
