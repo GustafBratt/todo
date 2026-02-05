@@ -58,7 +58,4 @@ public final class TodoList {
         return new TodoList(this.id, this.title, newList);
     }
 
-    public TodoList withNewTitle(String newTitle) {
-        return new TodoList(this.id, newTitle, this.todos);
-    }
 }

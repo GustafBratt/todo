@@ -3,10 +3,10 @@ package nu.forsenad.todo.ports.in;
 import nu.forsenad.todo.domain.Board;
 import nu.forsenad.todo.ports.out.BoardRepository;
 
-public class UpdateCardUseCase {
+public class UpdateTodoUseCase {
     private final BoardRepository boardRepository;
 
-    public UpdateCardUseCase(BoardRepository boardRepository) {
+    public UpdateTodoUseCase(BoardRepository boardRepository) {
         this.boardRepository = boardRepository;
     }
 

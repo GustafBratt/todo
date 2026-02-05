@@ -12,6 +12,7 @@ The main purpose here is to tinker with ports and adapters architecture.
 * Domain model immutable
 * No "commands", use cases taks a list of arguments
 * No spring boot in applicaton module
+* Board is aggregate root pretty much everywhere
 
 ## Plan for use cases and endpoints
 | Use Case | Description | Endpoint | Method |

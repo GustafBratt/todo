@@ -55,7 +55,7 @@ public class BoardController {
     @Operation(summary="Create new board")
     @PostMapping
     public ResponseEntity<BoardModel> createBoard(@RequestBody CreateUpdateBoardRequest request) {
-        Board newBoard = createBoardUseCase.execute(request.getName());
+        Board newBoard = createBoardUseCase.execute(request.getTitle());
         return ResponseEntity.ok(new BoardModel(newBoard));
     }
 
@@ -65,7 +65,7 @@ public class BoardController {
     public ResponseEntity<BoardModel> updateBoard(
             @PathVariable String id,
             @RequestBody CreateUpdateBoardRequest request) {
-        Board updatedBoard = updateBoardUseCase.execute(id, request.getName());
+        Board updatedBoard = updateBoardUseCase.execute(id, request.getTitle());
         return ResponseEntity.ok(new BoardModel(updatedBoard));
     }
 }

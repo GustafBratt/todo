@@ -30,7 +30,7 @@ public class BoardRepositoryImpl implements BoardRepository {
 
     @Override
     public Board findById(String boardId) {
-        return jpaRepository.findByIdWithLists(boardId)
+        return jpaRepository.findById(boardId)
                 .map(BoardEntity::toDomain)
                 .orElseThrow(() -> new IllegalArgumentException("Board not found: " + boardId));
     }

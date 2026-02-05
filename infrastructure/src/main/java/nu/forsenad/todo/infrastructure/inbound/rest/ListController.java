@@ -49,11 +49,11 @@ public class ListController {
     // PUT /lists/{id} - Update list title
     @Operation(summary="Update list title")
     @PutMapping("/{id}")
-    public ResponseEntity<TodoListModel> updateListTitle(
+    public ResponseEntity<BoardModel> updateListTitle(
             @PathVariable String id,
             @RequestBody UpdateListRequest request) {
-        TodoList updatedBoard = updateListTitleUseCase.execute(id, request.getTitle());
-        return ResponseEntity.ok(new TodoListModel(updatedBoard));
+        Board updatedBoard = updateListTitleUseCase.execute(id, request.getTitle());
+        return ResponseEntity.ok(new BoardModel(updatedBoard));
     }
 
     // PUT /lists/{id}/move - Move list to new position

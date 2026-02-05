@@ -1,14 +1,14 @@
 package nu.forsenad.todo.infrastructure.inbound.rest.model;
 
 public class CreateUpdateBoardRequest {
-    private String name;
+    private String title;
 
-    public String getName() {
-        return name;
+    public String getTitle() {
+        return title;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setTitle(String title) {
+        this.title = title;
     }
 
 }

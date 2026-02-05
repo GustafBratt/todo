@@ -10,13 +10,13 @@ public class UpdateBoardUseCase {
         this.boardRepository = boardRepository;
     }
 
-    public Board execute(String boardId, String newName) {
+    public Board execute(String boardId, String newTitle) {
         if (!boardRepository.exists(boardId)) {
             throw new IllegalArgumentException("Board with id " + boardId + " does not exist");
         }
 
         Board existingBoard = boardRepository.findById(boardId);
-        Board updatedBoard = existingBoard.withName(newName);
+        Board updatedBoard = existingBoard.withName(newTitle);
 
         boardRepository.save(updatedBoard);
 

@@ -5,29 +5,29 @@ import java.util.List;
 
 public final class Board {
     private final String id;
-    private final String name;
+    private final String title;
     private final List<TodoList> lists;
 
-    public Board(String id, String name, List<TodoList> lists) {
+    public Board(String id, String title, List<TodoList> lists) {
         if (lists == null) {
             throw new IllegalArgumentException("Lists cannot be null");
         }
-        if (name == null || name.isBlank()) {
-            throw new IllegalArgumentException("Board name cannot be blank");
+        if (title == null || title.isBlank()) {
+            throw new IllegalArgumentException("Board title cannot be blank");
         }
         if (id == null || id.isBlank()) {
             throw new IllegalArgumentException("Board id cannot be blank");
         }
         this.id = id;
-        this.name = name;
+        this.title = title;
         this.lists = List.copyOf(lists);
     }
 
-    public static Board create(String id, String name) {
-        return new Board(id, name, List.of());
+    public static Board create(String id, String title) {
+        return new Board(id, title, List.of());
     }
 
-    // Immutable update method - returns new instance with updated name
+    // Immutable update method - returns new instance with updated title
     public Board withName(String newName) {
         return new Board(this.id, newName, this.lists);
     }
@@ -38,7 +38,7 @@ public final class Board {
     }
 
     public String getName() {
-        return name;
+        return title;
     }
 
     public List<TodoList> getLists() {
@@ -48,13 +48,13 @@ public final class Board {
     public Board withNewList(TodoList newList) {
         List<TodoList> newLists = new ArrayList<>(this.lists);
         newLists.add(newList);
-        return new Board(this.id, this.name, newLists);
+        return new Board(this.id, this.title, newLists);
     }
 
     public Board withDeletedList(String listId) {
         List<TodoList> newLists = new ArrayList<>(this.lists);
         newLists = newLists.stream().filter(tl -> !tl.getId().equals(listId)).toList();
-        return new Board(this.id, this.name, newLists);
+        return new Board(this.id, this.title, newLists);
     }
 
 
@@ -67,7 +67,7 @@ public final class Board {
                 )
                 .toList();
 
-        return new Board(this.id, this.name, newLists);
+        return new Board(this.id, this.title, newLists);
     }
 
     public Board withMovedList(String listId, int newPosition) {
@@ -85,7 +85,7 @@ public final class Board {
         TodoList list = newLists.remove(currentIndex);
         newLists.add(newPosition, list);
 
-        return new Board(this.id, this.name, newLists);
+        return new Board(this.id, this.title, newLists);
     }
 
     private int indexOfList(String listId) {
@@ -110,7 +110,7 @@ public final class Board {
                     else
                         return l;
                 }).toList();
-        return new Board(this.id, this.name, newLists);
+        return new Board(this.id, this.title, newLists);
     }
 
     public Board withUpdatedTodo(String todoId, String title, String description) {
@@ -135,6 +135,6 @@ public final class Board {
                 })
                 .toList();
 
-        return new Board(this.id, this.name, newLists);
+        return new Board(this.id, this.title, newLists);
     }
 }

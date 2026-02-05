@@ -17,15 +17,15 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @DisplayName("UpdateCardUseCase Tests")
-class UpdateCardUseCaseTest {
+class UpdateTodoUseCaseTest {
 
     private BoardRepository boardRepository;
-    private UpdateCardUseCase updateCardUseCase;
+    private UpdateTodoUseCase updateTodoUseCase;
 
     @BeforeEach
     void setUp() {
         boardRepository = mock(BoardRepository.class);
-        updateCardUseCase = new UpdateCardUseCase(boardRepository);
+        updateTodoUseCase = new UpdateTodoUseCase(boardRepository);
     }
 
     @Test
@@ -43,7 +43,7 @@ class UpdateCardUseCaseTest {
         when(boardRepository.findBoardByTodoId(todoId)).thenReturn(originalBoard);
 
         // When
-        Board result = updateCardUseCase.execute(todoId, newTitle, newDescription);
+        Board result = updateTodoUseCase.execute(todoId, newTitle, newDescription);
 
         // Then
         ArgumentCaptor<Board> boardCaptor = ArgumentCaptor.forClass(Board.class);
@@ -76,7 +76,7 @@ class UpdateCardUseCaseTest {
         when(boardRepository.findBoardByTodoId(todoId2)).thenReturn(originalBoard);
 
         // When
-        updateCardUseCase.execute(todoId2, "Updated Todo 2", "Updated Description 2");
+        updateTodoUseCase.execute(todoId2, "Updated Todo 2", "Updated Description 2");
 
         // Then
         ArgumentCaptor<Board> boardCaptor = ArgumentCaptor.forClass(Board.class);
@@ -114,7 +114,7 @@ class UpdateCardUseCaseTest {
         when(boardRepository.findBoardByTodoId(todoId)).thenReturn(originalBoard);
 
         // When
-        updateCardUseCase.execute(todoId, "Updated Todo 2", "Updated Description 2");
+        updateTodoUseCase.execute(todoId, "Updated Todo 2", "Updated Description 2");
 
         // Then
         ArgumentCaptor<Board> boardCaptor = ArgumentCaptor.forClass(Board.class);
@@ -150,7 +150,7 @@ class UpdateCardUseCaseTest {
         when(boardRepository.findBoardByTodoId(todoId)).thenReturn(originalBoard);
 
         // When
-        updateCardUseCase.execute(todoId, "Updated", "Updated Desc");
+        updateTodoUseCase.execute(todoId, "Updated", "Updated Desc");
 
         // Then
         ArgumentCaptor<Board> boardCaptor = ArgumentCaptor.forClass(Board.class);
@@ -177,7 +177,7 @@ class UpdateCardUseCaseTest {
         when(boardRepository.findBoardByTodoId(todoId)).thenReturn(board);
 
         // When
-        updateCardUseCase.execute(todoId, "New Title", "New Description");
+        updateTodoUseCase.execute(todoId, "New Title", "New Description");
 
         // Then
         verify(boardRepository).findBoardByTodoId(todoId);
@@ -195,7 +195,7 @@ class UpdateCardUseCaseTest {
         when(boardRepository.findBoardByTodoId(todoId)).thenReturn(board);
 
         // When
-        updateCardUseCase.execute(todoId, "New Title", "New Description");
+        updateTodoUseCase.execute(todoId, "New Title", "New Description");
 
         // Then
         verify(boardRepository, times(1)).save(any(Board.class));
@@ -216,7 +216,7 @@ class UpdateCardUseCaseTest {
         when(boardRepository.findBoardByTodoId(todoId)).thenReturn(originalBoard);
 
         // When
-        Board result = updateCardUseCase.execute(todoId, newTitle, newDescription);
+        Board result = updateTodoUseCase.execute(todoId, newTitle, newDescription);
 
         // Then
         assertThat(result).isNotNull();
@@ -233,7 +233,7 @@ class UpdateCardUseCaseTest {
                 .thenThrow(new IllegalArgumentException("Board not found for todo: " + todoId));
 
         // When & Then
-        assertThatThrownBy(() -> updateCardUseCase.execute(todoId, "Title", "Description"))
+        assertThatThrownBy(() -> updateTodoUseCase.execute(todoId, "Title", "Description"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Board not found for todo: " + todoId);
 
@@ -255,7 +255,7 @@ class UpdateCardUseCaseTest {
         when(boardRepository.findBoardByTodoId(todoId)).thenReturn(originalBoard);
 
         // When
-        updateCardUseCase.execute(todoId, "New Title", "New Description");
+        updateTodoUseCase.execute(todoId, "New Title", "New Description");
 
         // Then - original board should remain unchanged
         assertThat(originalBoard.getLists().get(0).getTodos().get(0).getTitle()).isEqualTo(originalTitle);
@@ -277,7 +277,7 @@ class UpdateCardUseCaseTest {
         when(boardRepository.findBoardByTodoId(todoId)).thenReturn(board);
 
         // When
-        Board result = updateCardUseCase.execute(todoId, newTitle, emptyDescription);
+        Board result = updateTodoUseCase.execute(todoId, newTitle, emptyDescription);
 
         // Then
         assertThat(result.getLists().get(0).getTodos().get(0).getDescription()).isEqualTo(emptyDescription);
@@ -297,7 +297,7 @@ class UpdateCardUseCaseTest {
         when(boardRepository.findBoardByTodoId(todoId)).thenReturn(board);
 
         // When
-        Board result = updateCardUseCase.execute(todoId, newTitle, null);
+        Board result = updateTodoUseCase.execute(todoId, newTitle, null);
 
         // Then
         assertThat(result.getLists().get(0).getTodos().get(0).getDescription()).isNull();

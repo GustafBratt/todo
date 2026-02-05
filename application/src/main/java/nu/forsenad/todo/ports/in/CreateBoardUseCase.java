@@ -12,12 +12,12 @@ public class CreateBoardUseCase {
         this.boardRepository = boardRepository;
     }
 
-    public Board execute(String name) {
+    public Board execute(String title) {
         String boardId = UUID.randomUUID().toString();
 
         Board board = Board.create(
                 boardId,
-                name
+                title
         );
 
         boardRepository.save(board);
