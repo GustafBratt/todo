@@ -1,16 +1,26 @@
 package nu.forsenad.todo.infrastructure.inbound.rest;
 
+import jakarta.persistence.OptimisticLockException;
 import nu.forsenad.todo.exception.BusinessRuleViolationException;
 import nu.forsenad.todo.exception.ResourceNotFoundException;
 import nu.forsenad.todo.exception.TodoDomainException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
-    public class GlobalExceptionHandler {
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler({OptimisticLockException.class, ObjectOptimisticLockingFailureException.class})
+    public ResponseEntity<ProblemDetail> handleOptimisticLocking(Exception ex) {
+        ProblemDetail error = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                "Resource was modified concurrently. Please refresh and retry.");
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ProblemDetail> handleNotFound(ResourceNotFoundException ex) {

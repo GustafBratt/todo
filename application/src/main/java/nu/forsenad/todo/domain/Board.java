@@ -6,7 +6,6 @@ import nu.forsenad.todo.exception.ResourceNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 public final class Board {
     private final String id;
@@ -113,20 +112,30 @@ public final class Board {
     }
 
 
+    //0-based index for newPosition
     public Board withMovedList(String listId, int newPosition) {
-        if (newPosition < 0 || newPosition >= lists.size()) {
+        if (newPosition < 0 || newPosition > lists.size()) {
             throw new BusinessRuleViolationException("Can't move list id " + listId + " to position " + newPosition);
         }
 
         int currentIndex = indexOfList(listId);
 
-        if (currentIndex == newPosition) {
-            return this; // no-op, still immutable
+        // If moving forward and removing the element reduces the index of the target,
+        // adjust the insertion index accordingly.
+        if (currentIndex == newPosition || (currentIndex < newPosition && newPosition == lists.size() && currentIndex == lists.size() - 1)) {
+            return this; // no-op
         }
 
         List<TodoList> newLists = new ArrayList<>(lists);
         TodoList list = newLists.remove(currentIndex);
-        newLists.add(newPosition, list);
+
+        // If we removed an element before the insertion point, the insertion index shifts left by 1
+        int insertionIndex = newPosition;
+        if (currentIndex < newPosition) {
+            insertionIndex = newPosition - 1;
+        }
+
+        newLists.add(insertionIndex, list);
 
         return new Board(this.id, this.title, newLists);
     }
@@ -141,7 +150,8 @@ public final class Board {
     }
 
     public TodoList getList(String listId) {
-        return lists.stream().filter(l -> l.getId().equals(listId)).findFirst().get();
+        Optional<TodoList> listOptional = lists.stream().filter(l -> l.getId().equals(listId)).findFirst();
+        return listOptional.orElseThrow(() -> new ResourceNotFoundException("list", listId));
     }
 
     //TODO throw exception if not exactly one match

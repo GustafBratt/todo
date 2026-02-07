@@ -1,6 +1,8 @@
 package nu.forsenad.todo.ports.in;
 
 import nu.forsenad.todo.domain.Board;
+import nu.forsenad.todo.domain.IdGenerator;
+import nu.forsenad.todo.domain.SequentialIdGenerator;
 import nu.forsenad.todo.domain.TodoList;
 import nu.forsenad.todo.exception.BusinessRuleViolationException;
 import nu.forsenad.todo.ports.out.BoardRepository;
@@ -42,27 +44,26 @@ class MoveListWithinBoardUseCaseTest {
                 .withNewList(l2);
     }
 
-    @ParameterizedTest
-    @CsvSource({
-            "l2, 0, l2, l1",
-            "l1, 1, l2, l1"
-    })
-    void moves_list_to_new_position(
-            String listId,
-            int newPosition,
-            String firstExpected,
-            String secondExpected
-    ) {
-        when(boardRepository.findBoardByListId(listId))
-                .thenReturn(board);
+    @Test
+    void moves_list_to_new_position() {
+        IdGenerator idGenerator = new SequentialIdGenerator("list-");
+        TodoList a = TodoList.create("A", idGenerator);
+        TodoList b = TodoList.create("B", idGenerator);
+        TodoList c = TodoList.create("C", idGenerator);
 
-        Board result = sut.execute(listId, newPosition);
+        Board board = new Board("b1", "Board", java.util.List.of(a, b, c));
 
-        assertThat(result.getLists())
-                .extracting(TodoList::getId)
-                .containsExactly(firstExpected, secondExpected);
+        // Append A to the end (insert semantics allow position == size)
+        Board moved = board.withMovedList(a.getId(), board.getLists().size());
+        assertThat(moved.getLists()).containsExactly(b, c, a);
 
-        verify(boardRepository).save(result);
+        // Move C (currently at index 1) to the front
+        Board moved2 = moved.withMovedList(c.getId(), 0);
+        assertThat(moved2.getLists()).containsExactly(c, b, a);
+
+        // Move B (currently at index 1) to the end (position == size)
+        Board moved3 = moved2.withMovedList(b.getId(), moved2.getLists().size());
+        assertThat(moved3.getLists()).containsExactly(c, a, b);
     }
 
     @Test
@@ -91,13 +92,17 @@ class MoveListWithinBoardUseCaseTest {
 
     @Test
     void moving_list_past_end_throws() {
-        when(boardRepository.findBoardByListId("l1"))
-                .thenReturn(board);
+        IdGenerator idGenerator = new SequentialIdGenerator("list-");
+        TodoList list1 = TodoList.create("List 1", idGenerator);
+        TodoList list2 = TodoList.create("List 2", idGenerator);
 
-        assertThatThrownBy(() -> sut.execute("l1", 2))
-                .isInstanceOf(BusinessRuleViolationException.class);
+        Board board = new Board("b1", "Board 1", java.util.List.of(list1, list2));
 
-        verify(boardRepository, never()).save(any());
+        int pastEndIndex = board.getLists().size() + 1; // strictly greater than size
+
+        assertThatThrownBy(() -> board.withMovedList(list1.getId(), pastEndIndex))
+                .isInstanceOf(nu.forsenad.todo.exception.BusinessRuleViolationException.class)
+                .hasMessageContaining("Can't move list id");
     }
 
     @Test

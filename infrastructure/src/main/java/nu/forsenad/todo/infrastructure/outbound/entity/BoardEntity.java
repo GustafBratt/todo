@@ -22,7 +22,7 @@ public class BoardEntity {
     @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ListEntity> lists = new ArrayList<>();
 
-    protected BoardEntity() {
+    public BoardEntity() {
         // JPA requires a no-arg constructor
     }
 
@@ -64,5 +64,21 @@ public class BoardEntity {
 
     public List<ListEntity> getLists() {
         return lists;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setVersion(long version) {
+        this.version = version;
+    }
+
+    public void setLists(List<ListEntity> lists) {
+        this.lists = lists;
     }
 }

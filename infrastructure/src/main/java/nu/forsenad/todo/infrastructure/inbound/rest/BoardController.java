@@ -1,6 +1,7 @@
 package nu.forsenad.todo.infrastructure.inbound.rest;
 
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.transaction.Transactional;
 import nu.forsenad.todo.domain.Board;
 import nu.forsenad.todo.infrastructure.inbound.rest.model.BoardModel;
 import nu.forsenad.todo.infrastructure.inbound.rest.model.CreateUpdateBoardRequest;
@@ -15,6 +16,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/boards")
+@Transactional
 public class BoardController {
 
     private final CreateBoardUseCase createBoardUseCase;
