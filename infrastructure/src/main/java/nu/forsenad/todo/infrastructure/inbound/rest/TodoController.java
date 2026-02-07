@@ -6,7 +6,10 @@ import nu.forsenad.todo.infrastructure.inbound.rest.model.BoardModel;
 import nu.forsenad.todo.infrastructure.inbound.rest.model.CreateTodoRequest;
 import nu.forsenad.todo.ports.in.CreateTodoUseCase;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/todos")

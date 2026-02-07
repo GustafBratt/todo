@@ -2,6 +2,7 @@ package nu.forsenad.todo.ports.in;
 
 import nu.forsenad.todo.domain.Board;
 import nu.forsenad.todo.domain.TodoList;
+import nu.forsenad.todo.exception.BusinessRuleViolationException;
 import nu.forsenad.todo.ports.out.BoardRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -9,11 +10,13 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class UpdateBoardUseCaseTest {
@@ -25,7 +28,7 @@ class UpdateBoardUseCaseTest {
     void should_update_board_name() {
         // Given
         String boardId = "board-123";
-        Board existingBoard = Board.create(boardId, "Old Name");
+        Board existingBoard = new Board(boardId, "Old Name", new ArrayList<>());
         when(boardRepository.exists(boardId)).thenReturn(true);
         when(boardRepository.findById(boardId)).thenReturn(existingBoard);
 
@@ -40,10 +43,10 @@ class UpdateBoardUseCaseTest {
 
         Board saved = captor.getValue();
         assertThat(saved.getId()).isEqualTo(boardId);
-        assertThat(saved.getName()).isEqualTo("New Name");
+        assertThat(saved.getTitle()).isEqualTo("New Name");
         assertThat(saved.getLists()).isEmpty();
 
-        assertThat(result.getName()).isEqualTo("New Name");
+        assertThat(result.getTitle()).isEqualTo("New Name");
     }
 
     @Test
@@ -60,13 +63,13 @@ class UpdateBoardUseCaseTest {
     @Test
     void should_reject_blank_name() {
         String boardId = "board-123";
-        Board existingBoard = Board.create(boardId, "Old Name");
+        Board existingBoard = new Board(boardId, "Old Name", new ArrayList<>());
         when(boardRepository.exists(boardId)).thenReturn(true);
         when(boardRepository.findById(boardId)).thenReturn(existingBoard);
 
         UpdateBoardUseCase sut = new UpdateBoardUseCase(boardRepository);
 
-        assertThrows(IllegalArgumentException.class, () ->
+        assertThrows(BusinessRuleViolationException.class, () ->
                 sut.execute(boardId, "  ")
         );
     }

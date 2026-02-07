@@ -3,6 +3,7 @@ package nu.forsenad.todo.ports.in;
 import nu.forsenad.todo.domain.Board;
 import nu.forsenad.todo.domain.Todo;
 import nu.forsenad.todo.domain.TodoList;
+import nu.forsenad.todo.exception.BusinessRuleViolationException;
 import nu.forsenad.todo.ports.out.BoardRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,7 +12,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
+import java.util.ArrayList;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -35,7 +36,7 @@ class CreateTodoUseCaseTest {
 
         list = TodoList.create("My List");
         list1Id = list.getId();
-        board = Board.create("board-1", "My Board")
+        board = new Board("board-1", "My Board", new ArrayList<>())
                 .withNewList(list);
     }
 
@@ -94,7 +95,7 @@ class CreateTodoUseCaseTest {
                 .thenReturn(board);
 
         assertThatThrownBy(() -> sut.execute(list1Id, null, "Description"))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessRuleViolationException.class)
                 .hasMessageContaining("title");
 
         verify(boardRepository, never()).save(any());
@@ -106,7 +107,7 @@ class CreateTodoUseCaseTest {
                 .thenReturn(board);
 
         assertThatThrownBy(() -> sut.execute(list1Id, "  ", "Description"))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessRuleViolationException.class)
                 .hasMessageContaining("title");
 
         verify(boardRepository, never()).save(any());

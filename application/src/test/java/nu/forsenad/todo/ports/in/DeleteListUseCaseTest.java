@@ -9,6 +9,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
@@ -35,7 +37,7 @@ class DeleteListUseCaseTest {
         l1Id = l1.getId();
         l2Id = l2.getId();
 
-        board = Board.create("b1", "Board 1")
+        board = new Board("b1", "Board 1", new ArrayList<>())
                 .withNewList(l1)
                 .withNewList(l2);
     }

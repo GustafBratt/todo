@@ -4,8 +4,6 @@ import nu.forsenad.todo.domain.Board;
 import nu.forsenad.todo.domain.TodoList;
 import nu.forsenad.todo.ports.out.BoardRepository;
 
-import java.util.UUID;
-
 public class CreateListUseCase {
     private final BoardRepository boardRepository;
 

@@ -2,8 +2,10 @@ package nu.forsenad.todo.infrastructure.inbound.rest;
 
 import io.swagger.v3.oas.annotations.Operation;
 import nu.forsenad.todo.domain.Board;
-import nu.forsenad.todo.domain.TodoList;
-import nu.forsenad.todo.infrastructure.inbound.rest.model.*;
+import nu.forsenad.todo.infrastructure.inbound.rest.model.BoardModel;
+import nu.forsenad.todo.infrastructure.inbound.rest.model.CreateListRequest;
+import nu.forsenad.todo.infrastructure.inbound.rest.model.MoveListRequest;
+import nu.forsenad.todo.infrastructure.inbound.rest.model.UpdateListRequest;
 import nu.forsenad.todo.ports.in.CreateListUseCase;
 import nu.forsenad.todo.ports.in.DeleteListUseCase;
 import nu.forsenad.todo.ports.in.MoveListWithinBoardUseCase;

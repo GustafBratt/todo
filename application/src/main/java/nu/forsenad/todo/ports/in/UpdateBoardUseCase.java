@@ -16,7 +16,7 @@ public class UpdateBoardUseCase {
         }
 
         Board existingBoard = boardRepository.findById(boardId);
-        Board updatedBoard = existingBoard.withName(newTitle);
+        Board updatedBoard = existingBoard.newTitle(newTitle);
 
         boardRepository.save(updatedBoard);
 

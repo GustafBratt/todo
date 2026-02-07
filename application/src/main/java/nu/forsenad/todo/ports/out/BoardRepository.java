@@ -1,7 +1,6 @@
 package nu.forsenad.todo.ports.out;
 
 import nu.forsenad.todo.domain.Board;
-import nu.forsenad.todo.domain.Todo;
 
 import java.util.List;
 

@@ -1,6 +1,7 @@
 package nu.forsenad.todo.ports.in;
 
 import nu.forsenad.todo.domain.Board;
+import nu.forsenad.todo.exception.BusinessRuleViolationException;
 import nu.forsenad.todo.ports.out.BoardRepository;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -27,7 +28,7 @@ class CreateBoardUseCaseTest {
         verify(boardRepository).save(captor.capture());
 
         Board saved = captor.getValue();
-        assertThat(saved.getName()).isEqualTo("Test board");
+        assertThat(saved.getTitle()).isEqualTo("Test board");
         assertThat(saved.getLists()).isEmpty();
         assertThat(saved.getId()).isNotEmpty();
     }
@@ -35,7 +36,7 @@ class CreateBoardUseCaseTest {
     @Test
     void should_reject_null_name() {
         CreateBoardUseCase sut = new CreateBoardUseCase(boardRepository);
-        Assertions.assertThrows(IllegalArgumentException.class, () ->
+        Assertions.assertThrows(BusinessRuleViolationException.class, () ->
                 sut.execute(null)
         );
     }
@@ -43,7 +44,7 @@ class CreateBoardUseCaseTest {
     @Test
     void should_reject_blank_name() {
         CreateBoardUseCase sut = new CreateBoardUseCase(boardRepository);
-        Assertions.assertThrows(IllegalArgumentException.class, () ->
+        Assertions.assertThrows(BusinessRuleViolationException.class, () ->
                 sut.execute(" ")
         );
     }

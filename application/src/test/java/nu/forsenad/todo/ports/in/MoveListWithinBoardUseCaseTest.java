@@ -2,6 +2,7 @@ package nu.forsenad.todo.ports.in;
 
 import nu.forsenad.todo.domain.Board;
 import nu.forsenad.todo.domain.TodoList;
+import nu.forsenad.todo.exception.BusinessRuleViolationException;
 import nu.forsenad.todo.ports.out.BoardRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,7 +37,7 @@ class MoveListWithinBoardUseCaseTest {
         l1 = new TodoList("l1", "List 1", new ArrayList<>());
         l2 = new TodoList("l2", "List 2", new ArrayList<>());
 
-        board = Board.create("b1", "Board 1")
+        board = new Board("b1", "Board 1", new ArrayList<>())
                 .withNewList(l1)
                 .withNewList(l2);
     }
@@ -83,7 +84,7 @@ class MoveListWithinBoardUseCaseTest {
                 .thenReturn(board);
 
         assertThatThrownBy(() -> sut.execute("l1", -1))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(BusinessRuleViolationException.class);
 
         verify(boardRepository, never()).save(any());
     }
@@ -94,7 +95,7 @@ class MoveListWithinBoardUseCaseTest {
                 .thenReturn(board);
 
         assertThatThrownBy(() -> sut.execute("l1", 2))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(BusinessRuleViolationException.class);
 
         verify(boardRepository, never()).save(any());
     }

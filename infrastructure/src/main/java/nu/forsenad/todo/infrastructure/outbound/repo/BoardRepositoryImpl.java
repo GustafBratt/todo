@@ -1,10 +1,12 @@
 package nu.forsenad.todo.infrastructure.outbound.repo;
 
 import nu.forsenad.todo.domain.Board;
+import nu.forsenad.todo.exception.ResourceNotFoundException;
 import nu.forsenad.todo.infrastructure.outbound.entity.BoardEntity;
 import nu.forsenad.todo.ports.out.BoardRepository;
 import org.springframework.stereotype.Repository;
 
+import javax.management.relation.RelationServiceNotRegisteredException;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,12 +35,12 @@ public class BoardRepositoryImpl implements BoardRepository {
         // Step 1: Fetch board with lists
         Optional<BoardEntity> boardOpt = jpaRepository.findBoardWithListsById(boardId);
         if (boardOpt.isEmpty()) {
-            throw new IllegalArgumentException("Board not found: " + boardId);
+            throw new ResourceNotFoundException("board", boardId);
         }
 
         // Step 2: Fetch todos for all lists
         BoardEntity board = jpaRepository.fetchTodosForBoard(boardId)
-                .orElseThrow(() -> new IllegalArgumentException("Board not found: " + boardId));
+                .orElseThrow(() -> new ResourceNotFoundException("board", boardId));
 
         return board.toDomain();
     }
@@ -64,12 +66,12 @@ public class BoardRepositoryImpl implements BoardRepository {
         // Step 1: Fetch board with lists
         Optional<BoardEntity> boardOpt = jpaRepository.findBoardWithListsByListId(listId);
         if (boardOpt.isEmpty()) {
-            throw new IllegalArgumentException("Board not found for list: " + listId);
+            throw new ResourceNotFoundException("list", listId);
         }
 
         // Step 2: Fetch todos for all lists
         BoardEntity board = jpaRepository.fetchTodosForBoard(boardOpt.get().getId())
-                .orElseThrow(() -> new IllegalArgumentException("Board not found for list: " + listId));
+                .orElseThrow(() -> new ResourceNotFoundException("list", listId));
 
         return board.toDomain();
     }
@@ -79,12 +81,12 @@ public class BoardRepositoryImpl implements BoardRepository {
         // Step 1: Fetch board with lists
         Optional<BoardEntity> boardOpt = jpaRepository.findBoardWithListsByTodoId(todoId);
         if (boardOpt.isEmpty()) {
-            throw new IllegalArgumentException("Board not found for todo: " + todoId);
+            throw new ResourceNotFoundException("todo", todoId);
         }
 
         // Step 2: Fetch todos for all lists
         BoardEntity board = jpaRepository.fetchTodosForBoard(boardOpt.get().getId())
-                .orElseThrow(() -> new IllegalArgumentException("Board not found for todo: " + todoId));
+                .orElseThrow(() -> new ResourceNotFoundException("todo", todoId));
 
         return board.toDomain();
     }

@@ -13,6 +13,7 @@ The main purpose here is to tinker with ports and adapters architecture.
 * No "commands", use cases taks a list of arguments
 * No spring boot in applicaton module
 * Board is aggregate root pretty much everywhere
+* Application inbound ports are not interfaces, but use case implemntatios. This is a short cut.
 
 ## Plan for use cases and endpoints
 | Use Case | Description | Endpoint | Method |

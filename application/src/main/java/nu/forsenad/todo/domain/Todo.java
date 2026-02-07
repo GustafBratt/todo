@@ -1,5 +1,7 @@
 package nu.forsenad.todo.domain;
 
+import nu.forsenad.todo.exception.BusinessRuleViolationException;
+
 import java.util.UUID;
 
 public final class Todo {
@@ -9,10 +11,10 @@ public final class Todo {
 
     public Todo(String id, String title, String description) {
         if (id == null || id.isBlank()) {
-            throw new IllegalArgumentException("Todo id cannot be blank");
+            throw new BusinessRuleViolationException("Todo id cannot be blank");
         }
         if (title == null || title.isBlank()) {
-            throw new IllegalArgumentException("Todo title cannot be blank");
+            throw new BusinessRuleViolationException("Todo title cannot be blank");
         }
         this.id = id;
         this.title = title;

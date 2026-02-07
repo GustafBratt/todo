@@ -1,5 +1,7 @@
 package nu.forsenad.todo.domain;
 
+import nu.forsenad.todo.exception.BusinessRuleViolationException;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -11,13 +13,13 @@ public final class TodoList {
 
     public TodoList(String id, String title, List<Todo> todos) {
         if (id == null || id.isBlank()) {
-            throw new IllegalArgumentException("TodoList id cannot be blank");
+            throw new BusinessRuleViolationException("TodoList id cannot be blank");
         }
         if (title == null || title.isBlank()) {
-            throw new IllegalArgumentException("TodoList title cannot be blank");
+            throw new BusinessRuleViolationException("TodoList title cannot be blank");
         }
         if (todos == null) {
-            throw new IllegalArgumentException("Todos cannot be null");
+            throw new BusinessRuleViolationException("Todos cannot be null");
         }
         this.id = id;
         this.title = title;
@@ -53,6 +55,7 @@ public final class TodoList {
                 '}';
     }
 
+    //TODO throw exception if not exactly one match
     List<Todo> withUpdatedTodo(String todoId, String title, String description) {
         return todos.stream()
                 .map(todo -> todo.getId().equals(todoId)

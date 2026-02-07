@@ -5,8 +5,8 @@ import nu.forsenad.todo.domain.Todo;
 import nu.forsenad.todo.domain.TodoList;
 import nu.forsenad.todo.ports.out.BoardRepository;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.List;
@@ -159,7 +159,7 @@ class UpdateTodoUseCaseTest {
         Board savedBoard = boardCaptor.getValue();
 
         assertThat(savedBoard.getId()).isEqualTo(boardId);
-        assertThat(savedBoard.getName()).isEqualTo(boardName);
+        assertThat(savedBoard.getTitle()).isEqualTo(boardName);
         assertThat(savedBoard.getLists()).hasSize(1);
         assertThat(savedBoard.getLists().get(0).getId()).isEqualTo(listId);
         assertThat(savedBoard.getLists().get(0).getTitle()).isEqualTo(listTitle);

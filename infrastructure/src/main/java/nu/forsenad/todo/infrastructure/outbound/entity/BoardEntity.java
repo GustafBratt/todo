@@ -2,6 +2,7 @@ package nu.forsenad.todo.infrastructure.outbound.entity;
 
 import jakarta.persistence.*;
 import nu.forsenad.todo.domain.Board;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -29,7 +30,7 @@ public class BoardEntity {
     public static BoardEntity fromDomain(Board board) {
         BoardEntity entity = new BoardEntity();
         entity.id = board.getId();
-        entity.name = board.getName();
+        entity.name = board.getTitle();
         entity.lists = board.getLists().stream()
                 .map(ListEntity::fromDomain)
                 .collect(Collectors.toList());

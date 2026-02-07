@@ -11,7 +11,7 @@ public class BoardModel {
 
     public BoardModel(Board domainBoard) {
         this.id = domainBoard.getId();
-        this.name = domainBoard.getName();
+        this.name = domainBoard.getTitle();
         this.lists = domainBoard.getLists()
                 .stream()
                 .map(TodoListModel::new)
