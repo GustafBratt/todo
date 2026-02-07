@@ -35,7 +35,6 @@ class BoardControllerIntegrationTest {
     }
 
     @Test
-    @Transactional
     void shouldCreateBoardAndPersistToDatabase() {
         // Given
         String boardName = "My Test Board";
@@ -43,7 +42,7 @@ class BoardControllerIntegrationTest {
         // When
         String boardId = given()
                 .contentType(ContentType.JSON)
-                .body("{\"name\":\"" + boardName + "\"}")
+                .body("{\"title\":\"" + boardName + "\"}")
                 .when()
                 .post("/boards")
                 .then()
@@ -55,7 +54,7 @@ class BoardControllerIntegrationTest {
                 .path("id");
 
         // Then
-        Optional<BoardEntity> savedBoard = boardRepository.findById(boardId);
+        Optional<BoardEntity> savedBoard = boardRepository.findBoardWithListsById(boardId);
 
         assertThat(savedBoard).isPresent();
         assertThat(savedBoard.get().getName()).isEqualTo(boardName);
