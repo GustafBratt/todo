@@ -11,19 +11,24 @@ public final class Todo {
 
     public Todo(String id, String title, String description) {
         if (id == null || id.isBlank()) {
-            throw new BusinessRuleViolationException("Todo id cannot be blank");
+            throw new IllegalArgumentException("Todo id cannot be blank");
         }
         if (title == null || title.isBlank()) {
-            throw new BusinessRuleViolationException("Todo title cannot be blank");
+            throw new IllegalArgumentException("Todo title cannot be blank");
         }
         this.id = id;
         this.title = title;
         this.description = description;
     }
 
+    // Create method translates to business rule violations
     public static Todo create(String title, String description, IdGenerator idGenerator) {
-        String id = idGenerator.generateId();
-        return new Todo(id, title, description);
+        try {
+            String id = idGenerator.generateId();
+            return new Todo(id, title, description);
+        } catch (IllegalArgumentException e) {
+            throw new BusinessRuleViolationException(e.getMessage());
+        }
     }
 
     public String getId() {

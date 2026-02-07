@@ -5,6 +5,7 @@ import nu.forsenad.todo.exception.ResourceNotFoundException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public final class Board {
@@ -32,6 +33,7 @@ public final class Board {
         String id = idGenerator.generateId();
         return new Board(id, title, List.of());
     }
+
     // Immutable update method - returns new instance with updated title
     public Board newTitle(String newTitle) {
         return new Board(this.id, newTitle, this.lists);
@@ -113,7 +115,7 @@ public final class Board {
 
     public Board withMovedList(String listId, int newPosition) {
         if (newPosition < 0 || newPosition >= lists.size()) {
-            throw new BusinessRuleViolationException("Can't move list id "+ listId + " to position " + newPosition);
+            throw new BusinessRuleViolationException("Can't move list id " + listId + " to position " + newPosition);
         }
 
         int currentIndex = indexOfList(listId);
@@ -135,7 +137,7 @@ public final class Board {
                 return i;
             }
         }
-        throw new BusinessRuleViolationException("Board " + this.id + " has no list with id " + listId);
+        throw new IllegalStateException("Board " + this.id + " has no list with id " + listId);
     }
 
     public TodoList getList(String listId) {
@@ -158,18 +160,16 @@ public final class Board {
     public Board withUpdatedTodo(String todoId, String title, String description) {
         List<TodoList> newLists = lists.stream()
                 .map(list -> {
-                    // Check if this list contains the todo
-                    boolean thisListHasTodo = list.getTodos().stream()
-                            .anyMatch(todo -> todo.getId().equals(todoId));
+                    Optional<Todo> matchingTodo = list.getTodos().stream()
+                            .filter(todo -> todo.getId().equals(todoId))
+                            .findFirst();
 
-                    if (thisListHasTodo) {
-                        // Update the todo in this list
-                        List<Todo> updatedTodos = list.withUpdatedTodo(todoId, title, description);
-                        return new TodoList(list.getId(), list.getTitle(), updatedTodos);
-                    } else {
-                        // Return the list unchanged
-                        return list;
-                    }
+                    return matchingTodo
+                            .map(todo -> new TodoList(
+                                    list.getId(),
+                                    list.getTitle(),
+                                    list.withUpdatedTodo(todoId, title, description)))
+                            .orElse(list);
                 })
                 .toList();
 

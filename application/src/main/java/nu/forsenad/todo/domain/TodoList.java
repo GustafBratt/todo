@@ -13,13 +13,13 @@ public final class TodoList {
 
     public TodoList(String id, String title, List<Todo> todos) {
         if (id == null || id.isBlank()) {
-            throw new BusinessRuleViolationException("TodoList id cannot be blank");
+            throw new IllegalArgumentException("TodoList id cannot be blank");
         }
         if (title == null || title.isBlank()) {
-            throw new BusinessRuleViolationException("TodoList title cannot be blank");
+            throw new IllegalArgumentException("TodoList title cannot be blank");
         }
         if (todos == null) {
-            throw new BusinessRuleViolationException("Todos cannot be null");
+            throw new IllegalArgumentException("Todos cannot be null");
         }
         this.id = id;
         this.title = title;
@@ -27,7 +27,11 @@ public final class TodoList {
     }
 
     public static TodoList create(String title, IdGenerator idGenerator) {
-        return new TodoList(idGenerator.generateId(), title, List.of());
+        try {
+            return new TodoList(idGenerator.generateId(), title, List.of());
+        } catch (IllegalArgumentException e) {
+            throw new BusinessRuleViolationException(e.getMessage());
+        }
     }
 
     public String getId() {

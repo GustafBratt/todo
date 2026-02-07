@@ -1,6 +1,7 @@
 package nu.forsenad.todo.domain;
 
 import nu.forsenad.todo.exception.BusinessRuleViolationException;
+import nu.forsenad.todo.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -86,6 +87,20 @@ class BoardTest {
         Board result = board.withDeletedList(list1.getId());
 
         assertThat(result.getLists()).isEmpty();
+    }
+
+
+    @Test
+    void throws_when_moving_nonexistent_list() {
+        IdGenerator idGenerator = new SequentialIdGenerator("list-");
+
+        TodoList list1 = TodoList.create("List 1", idGenerator);
+
+        Board board = new Board("b1", "Board 1", java.util.List.of(list1));
+
+        assertThatThrownBy(() -> board.withMovedList("nonexistent-id", 0))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("nonexistent-id");
     }
 
 }

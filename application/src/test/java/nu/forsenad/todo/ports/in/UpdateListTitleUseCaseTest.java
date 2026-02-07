@@ -12,6 +12,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -88,6 +89,26 @@ class UpdateListTitleUseCaseTest {
         assertThatThrownBy(() -> sut.execute("nonexistent-id", "New Title"))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("nonexistent-id");
+    }
+
+    @Test
+    public void throws_exception_when_duplicate_list_ids() {
+        // Create two lists with the same ID to simulate data corruption
+        String duplicateId = "duplicate-id";
+        TodoList list1 = new TodoList(duplicateId, "List 1", List.of());
+        TodoList list2 = new TodoList(duplicateId, "List 2", List.of());
+
+        Board corruptedBoard = new Board("b1", "Board 1", new ArrayList<>())
+                .withNewList(list1)
+                .withNewList(list2);
+
+        when(boardRepository.findBoardByListId(duplicateId))
+                .thenReturn(corruptedBoard);
+
+        assertThatThrownBy(() -> sut.execute(duplicateId, "New Title"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Data integrity violation")
+                .hasMessageContaining(duplicateId);
     }
 
     @Test
