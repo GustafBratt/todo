@@ -117,16 +117,12 @@ public final class Board {
         List<TodoList> newLists = lists.stream()
                 .map(list -> {
                     // Check if this list contains the todo
-                    boolean hasTodo = list.getTodos().stream()
+                    boolean thisListHasTodo = list.getTodos().stream()
                             .anyMatch(todo -> todo.getId().equals(todoId));
 
-                    if (hasTodo) {
+                    if (thisListHasTodo) {
                         // Update the todo in this list
-                        List<Todo> updatedTodos = list.getTodos().stream()
-                                .map(todo -> todo.getId().equals(todoId)
-                                        ? todo.withNewFields(title, description)
-                                        : todo)
-                                .toList();
+                        List<Todo> updatedTodos = list.withUpdatedTodo(todoId, title, description);
                         return new TodoList(list.getId(), list.getTitle(), updatedTodos);
                     } else {
                         // Return the list unchanged
@@ -137,4 +133,5 @@ public final class Board {
 
         return new Board(this.id, this.title, newLists);
     }
+
 }

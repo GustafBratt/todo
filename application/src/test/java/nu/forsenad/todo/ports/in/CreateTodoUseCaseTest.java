@@ -27,28 +27,30 @@ class CreateTodoUseCaseTest {
 
     Board board;
     TodoList list;
+    String list1Id;
 
     @BeforeEach
     void setUp() {
         sut = new CreateTodoUseCase(boardRepository);
 
-        list = TodoList.create("list-1", "My List");
+        list = TodoList.create("My List");
+        list1Id = list.getId();
         board = Board.create("board-1", "My Board")
                 .withNewList(list);
     }
 
     @Test
     void should_add_todo_to_list() {
-        when(boardRepository.findBoardByListId("list-1"))
+        when(boardRepository.findBoardByListId(list1Id))
                 .thenReturn(board);
 
-        Board result = sut.execute("list-1", "Buy milk", "Get 2% milk from store");
+        Board result = sut.execute(list1Id, "Buy milk", "Get 2% milk from store");
 
         ArgumentCaptor<Board> captor = ArgumentCaptor.forClass(Board.class);
         verify(boardRepository).save(captor.capture());
 
         Board saved = captor.getValue();
-        TodoList updatedList = saved.getList("list-1");
+        TodoList updatedList = saved.getList(list1Id);
 
         assertThat(updatedList.getTodos()).hasSize(1);
         Todo todo = updatedList.getTodos().get(0);
@@ -62,12 +64,12 @@ class CreateTodoUseCaseTest {
         TodoList listWithTodo = list.withNewTodo("Existing task", "Description");
         Board boardWithTodo = board.withReplacedList(listWithTodo);
 
-        when(boardRepository.findBoardByListId("list-1"))
+        when(boardRepository.findBoardByListId(list1Id))
                 .thenReturn(boardWithTodo);
 
-        Board result = sut.execute("list-1", "New task", "New description");
+        Board result = sut.execute(list1Id, "New task", "New description");
 
-        TodoList updatedList = result.getList("list-1");
+        TodoList updatedList = result.getList(list1Id);
         assertThat(updatedList.getTodos()).hasSize(2);
         assertThat(updatedList.getTodos())
                 .extracting(Todo::getTitle)
@@ -76,22 +78,22 @@ class CreateTodoUseCaseTest {
 
     @Test
     void should_allow_null_description() {
-        when(boardRepository.findBoardByListId("list-1"))
+        when(boardRepository.findBoardByListId(list1Id))
                 .thenReturn(board);
 
-        Board result = sut.execute("list-1", "Task without description", null);
+        Board result = sut.execute(list1Id, "Task without description", null);
 
-        TodoList updatedList = result.getList("list-1");
+        TodoList updatedList = result.getList(list1Id);
         assertThat(updatedList.getTodos()).hasSize(1);
         assertThat(updatedList.getTodos().get(0).getDescription()).isNull();
     }
 
     @Test
     void should_reject_null_title() {
-        when(boardRepository.findBoardByListId("list-1"))
+        when(boardRepository.findBoardByListId(list1Id))
                 .thenReturn(board);
 
-        assertThatThrownBy(() -> sut.execute("list-1", null, "Description"))
+        assertThatThrownBy(() -> sut.execute(list1Id, null, "Description"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("title");
 
@@ -100,10 +102,10 @@ class CreateTodoUseCaseTest {
 
     @Test
     void should_reject_blank_title() {
-        when(boardRepository.findBoardByListId("list-1"))
+        when(boardRepository.findBoardByListId(list1Id))
                 .thenReturn(board);
 
-        assertThatThrownBy(() -> sut.execute("list-1", "  ", "Description"))
+        assertThatThrownBy(() -> sut.execute(list1Id, "  ", "Description"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("title");
 
@@ -124,21 +126,22 @@ class CreateTodoUseCaseTest {
 
     @Test
     void should_preserve_other_lists_on_board() {
-        TodoList list2 = TodoList.create("list-2", "Other List");
+        TodoList list2 = TodoList.create("Other List");
+        String list2Id = list2.getId();
         Board boardWithMultipleLists = board.withNewList(list2);
 
-        when(boardRepository.findBoardByListId("list-1"))
+        when(boardRepository.findBoardByListId(list1Id))
                 .thenReturn(boardWithMultipleLists);
 
-        Board result = sut.execute("list-1", "New task", "Description");
+        Board result = sut.execute(list1Id, "New task", "Description");
 
         assertThat(result.getLists()).hasSize(2);
         assertThat(result.getLists())
                 .extracting(TodoList::getId)
-                .containsExactly("list-1", "list-2");
+                .containsExactly(list1Id, list2Id);
 
         // Only list-1 should have the new todo
-        assertThat(result.getList("list-1").getTodos()).hasSize(1);
-        assertThat(result.getList("list-2").getTodos()).isEmpty();
+        assertThat(result.getList(list1Id).getTodos()).hasSize(1);
+        assertThat(result.getList(list2Id).getTodos()).isEmpty();
     }
 }

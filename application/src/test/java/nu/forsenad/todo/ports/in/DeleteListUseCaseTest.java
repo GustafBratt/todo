@@ -22,14 +22,18 @@ class DeleteListUseCaseTest {
 
     TodoList l1;
     TodoList l2;
+    String l1Id;
+    String l2Id;
     Board board;
 
     @BeforeEach
     void setUp() {
         sut = new DeleteListUseCase(boardRepository);
 
-        l1 = TodoList.create("l1", "List 1");
-        l2 = TodoList.create("l2", "List 2");
+        l1 = TodoList.create("List 1");
+        l2 = TodoList.create("List 2");
+        l1Id = l1.getId();
+        l2Id = l2.getId();
 
         board = Board.create("b1", "Board 1")
                 .withNewList(l1)
@@ -38,9 +42,9 @@ class DeleteListUseCaseTest {
 
     @Test
     public void list_is_removed() {
-        when(boardRepository.findBoardByListId("l1"))
+        when(boardRepository.findBoardByListId(l1Id))
                 .thenReturn(board);
-        Board actual = sut.execute("l1");
+        Board actual = sut.execute(l1Id);
         assertThat(actual.getLists()).containsExactly(l2);
     }
 

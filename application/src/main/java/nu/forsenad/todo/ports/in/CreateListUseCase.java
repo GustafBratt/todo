@@ -16,7 +16,7 @@ public class CreateListUseCase {
     public Board execute(String boardId, String name) {
         Board board = boardRepository.findById(boardId);
 
-        TodoList newList = TodoList.create(UUID.randomUUID().toString(), name);
+        TodoList newList = TodoList.create(name);
         Board updatedBoard = board.withNewList(newList);
 
         boardRepository.save(updatedBoard);

@@ -2,6 +2,7 @@ package nu.forsenad.todo.domain;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public final class TodoList {
     private final String id;
@@ -23,8 +24,8 @@ public final class TodoList {
         this.todos = List.copyOf(todos);
     }
 
-    public static TodoList create(String id, String title) {
-        return new TodoList(id, title, List.of());
+    public static TodoList create(String title) {
+        return new TodoList(UUID.randomUUID().toString(), title, List.of());
     }
 
     public String getId() {
@@ -40,7 +41,7 @@ public final class TodoList {
     }
 
     public TodoList withTitle(String newTitle) {
-        return create(this.id, newTitle);
+        return new TodoList(this.id, newTitle, this.todos);
     }
 
     @Override
@@ -50,6 +51,14 @@ public final class TodoList {
                 ", title='" + title + '\'' +
                 ", todos=" + todos +
                 '}';
+    }
+
+    List<Todo> withUpdatedTodo(String todoId, String title, String description) {
+        return todos.stream()
+                .map(todo -> todo.getId().equals(todoId)
+                        ? todo.withNewFields(title, description)
+                        : todo)
+                .toList();
     }
 
     public TodoList withNewTodo(String title, String description) {

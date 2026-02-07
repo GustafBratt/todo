@@ -11,6 +11,8 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
@@ -31,8 +33,8 @@ class MoveListWithinBoardUseCaseTest {
     void setUp() {
         sut = new MoveListWithinBoardUseCase(boardRepository);
 
-        l1 = TodoList.create("l1", "List 1");
-        l2 = TodoList.create("l2", "List 2");
+        l1 = new TodoList("l1", "List 1", new ArrayList<>());
+        l2 = new TodoList("l2", "List 2", new ArrayList<>());
 
         board = Board.create("b1", "Board 1")
                 .withNewList(l1)
