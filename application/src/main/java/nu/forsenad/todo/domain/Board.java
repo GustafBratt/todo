@@ -27,11 +27,11 @@ public final class Board {
         this.lists = List.copyOf(lists);
     }
 
-    public static Board create(String title) {
-        String id = UUID.randomUUID().toString();
+    // Updated Board.create method to use IdGenerator
+    public static Board create(String title, IdGenerator idGenerator) {
+        String id = idGenerator.generateId();
         return new Board(id, title, List.of());
     }
-
     // Immutable update method - returns new instance with updated title
     public Board newTitle(String newTitle) {
         return new Board(this.id, newTitle, this.lists);
@@ -56,19 +56,49 @@ public final class Board {
         return new Board(this.id, this.title, newLists);
     }
 
-    //TODO if possible, improve error handling to throw exception if no match, or more than one match
     public Board withDeletedList(String listId) {
-        List<TodoList> newLists = new ArrayList<>(this.lists);
-        newLists = newLists.stream().filter(tl -> !tl.getId().equals(listId)).toList();
-        if(newLists.isEmpty()) {
+        // Count how many lists match the listId
+        long matchCount = lists.stream()
+                .filter(list -> list.getId().equals(listId))
+                .count();
+
+        if (matchCount == 0) {
             throw new ResourceNotFoundException("list", listId);
         }
+
+        if (matchCount > 1) {
+            // This indicates a data integrity issue - should result in HTTP 500
+            throw new IllegalStateException(
+                    "Data integrity violation: Board " + this.id + " has multiple lists with id " + listId
+            );
+        }
+
+        // Now perform the deletion - we know exactly one match exists
+        List<TodoList> newLists = lists.stream()
+                .filter(list -> !list.getId().equals(listId))
+                .toList();
+
         return new Board(this.id, this.title, newLists);
     }
 
-
-    //TODO throw exception if not exactly one match
     public Board withRenamedList(String listId, String newTitle) {
+        // First, verify that exactly one list matches the listId
+        long matchCount = lists.stream()
+                .filter(list -> list.getId().equals(listId))
+                .count();
+
+        if (matchCount == 0) {
+            throw new ResourceNotFoundException("list", listId);
+        }
+
+        if (matchCount > 1) {
+            // This indicates a data integrity issue - should result in HTTP 500
+            throw new IllegalStateException(
+                    "Data integrity violation: Board " + this.id + " has multiple lists with id " + listId
+            );
+        }
+
+        // Now perform the rename - we know exactly one match exists
         List<TodoList> newLists = lists.stream()
                 .map(list ->
                         list.getId().equals(listId)
@@ -79,6 +109,7 @@ public final class Board {
 
         return new Board(this.id, this.title, newLists);
     }
+
 
     public Board withMovedList(String listId, int newPosition) {
         if (newPosition < 0 || newPosition >= lists.size()) {

@@ -3,6 +3,7 @@ package nu.forsenad.todo.ports.in;
 import nu.forsenad.todo.domain.Board;
 import nu.forsenad.todo.domain.Todo;
 import nu.forsenad.todo.domain.TodoList;
+import nu.forsenad.todo.domain.UuidIdGenerator;
 import nu.forsenad.todo.exception.BusinessRuleViolationException;
 import nu.forsenad.todo.ports.out.BoardRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,9 +33,9 @@ class CreateTodoUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        sut = new CreateTodoUseCase(boardRepository);
+        sut = new CreateTodoUseCase(boardRepository, new UuidIdGenerator());
 
-        list = TodoList.create("My List");
+        list = TodoList.create("My List", new UuidIdGenerator());
         list1Id = list.getId();
         board = new Board("board-1", "My Board", new ArrayList<>())
                 .withNewList(list);
@@ -62,7 +63,7 @@ class CreateTodoUseCaseTest {
 
     @Test
     void should_preserve_existing_todos() {
-        TodoList listWithTodo = list.withNewTodo("Existing task", "Description");
+        TodoList listWithTodo = list.withNewTodo("Existing task", "Description", new UuidIdGenerator());
         Board boardWithTodo = board.withReplacedList(listWithTodo);
 
         when(boardRepository.findBoardByListId(list1Id))
@@ -127,7 +128,7 @@ class CreateTodoUseCaseTest {
 
     @Test
     void should_preserve_other_lists_on_board() {
-        TodoList list2 = TodoList.create("Other List");
+        TodoList list2 = TodoList.create("Other List", new UuidIdGenerator());
         String list2Id = list2.getId();
         Board boardWithMultipleLists = board.withNewList(list2);
 

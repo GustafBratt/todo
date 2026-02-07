@@ -1,6 +1,7 @@
 package nu.forsenad.todo.ports.in;
 
 import nu.forsenad.todo.domain.Board;
+import nu.forsenad.todo.domain.UuidIdGenerator;
 import nu.forsenad.todo.exception.BusinessRuleViolationException;
 import nu.forsenad.todo.ports.out.BoardRepository;
 import org.junit.jupiter.api.Assertions;
@@ -20,7 +21,7 @@ class CreateBoardUseCaseTest {
 
     @Test
     void should_persist_ok() {
-        CreateBoardUseCase sut = new CreateBoardUseCase(boardRepository);
+        CreateBoardUseCase sut = new CreateBoardUseCase(boardRepository, new UuidIdGenerator());
 
         sut.execute("Test board");
 
@@ -35,7 +36,7 @@ class CreateBoardUseCaseTest {
 
     @Test
     void should_reject_null_name() {
-        CreateBoardUseCase sut = new CreateBoardUseCase(boardRepository);
+        CreateBoardUseCase sut = new CreateBoardUseCase(boardRepository, new UuidIdGenerator());
         Assertions.assertThrows(BusinessRuleViolationException.class, () ->
                 sut.execute(null)
         );
@@ -43,7 +44,7 @@ class CreateBoardUseCaseTest {
 
     @Test
     void should_reject_blank_name() {
-        CreateBoardUseCase sut = new CreateBoardUseCase(boardRepository);
+        CreateBoardUseCase sut = new CreateBoardUseCase(boardRepository, new UuidIdGenerator());
         Assertions.assertThrows(BusinessRuleViolationException.class, () ->
                 sut.execute(" ")
         );

@@ -1,16 +1,26 @@
 package nu.forsenad.todo.infrastructure.config;
 
+import nu.forsenad.todo.domain.IdGenerator;
+import nu.forsenad.todo.domain.UuidIdGenerator;
 import nu.forsenad.todo.ports.in.*;
 import nu.forsenad.todo.ports.out.BoardRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class UseCaseConfig {
+public class UseCaseConfiguration {
+
+    // IdGenerator bean - used by all create use cases
+    @Bean
+    public IdGenerator idGenerator() {
+        return new UuidIdGenerator();
+    }
 
     @Bean
-    public CreateBoardUseCase createBoardUseCase(BoardRepository boardRepository) {
-        return new CreateBoardUseCase(boardRepository);
+    public CreateBoardUseCase createBoardUseCase(
+            BoardRepository boardRepository,
+            IdGenerator idGenerator) {
+        return new CreateBoardUseCase(boardRepository, idGenerator);
     }
 
     @Bean
@@ -29,8 +39,10 @@ public class UseCaseConfig {
     }
 
     @Bean
-    public CreateListUseCase createListUseCase(BoardRepository boardRepository) {
-        return new CreateListUseCase(boardRepository);
+    public CreateListUseCase createListUseCase(
+            BoardRepository boardRepository,
+            IdGenerator idGenerator) {
+        return new CreateListUseCase(boardRepository, idGenerator);
     }
 
     @Bean
@@ -49,7 +61,9 @@ public class UseCaseConfig {
     }
 
     @Bean
-    public CreateTodoUseCase createTodoUseCase(BoardRepository boardRepository) {
-        return new CreateTodoUseCase(boardRepository);
+    public CreateTodoUseCase createTodoUseCase(
+            BoardRepository boardRepository,
+            IdGenerator idGenerator) {
+        return new CreateTodoUseCase(boardRepository, idGenerator);
     }
 }

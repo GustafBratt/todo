@@ -26,8 +26,8 @@ public final class TodoList {
         this.todos = List.copyOf(todos);
     }
 
-    public static TodoList create(String title) {
-        return new TodoList(UUID.randomUUID().toString(), title, List.of());
+    public static TodoList create(String title, IdGenerator idGenerator) {
+        return new TodoList(idGenerator.generateId(), title, List.of());
     }
 
     public String getId() {
@@ -64,9 +64,9 @@ public final class TodoList {
                 .toList();
     }
 
-    public TodoList withNewTodo(String title, String description) {
+    public TodoList withNewTodo(String title, String description, IdGenerator idGenerator) {
         List<Todo> newList = new ArrayList<>(getTodos());
-        newList.add(Todo.create(title, description));
+        newList.add(Todo.create(title, description, idGenerator));
         return new TodoList(this.id, this.title, newList);
     }
 

@@ -21,8 +21,8 @@ public final class Todo {
         this.description = description;
     }
 
-    public static Todo create(String title, String description) {
-        String id = UUID.randomUUID().toString();
+    public static Todo create(String title, String description, IdGenerator idGenerator) {
+        String id = idGenerator.generateId();
         return new Todo(id, title, description);
     }
 
